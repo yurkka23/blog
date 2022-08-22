@@ -9,5 +9,6 @@ namespace Blog.Application.Users.Commands.CreateArticle
         public Guid UserId { get; set; }
         public string Title { get; set; }
         public string Content { get; set; }
+
     }
 }
