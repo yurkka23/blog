@@ -1,7 +1,6 @@
 ﻿using System;
 using MediatR;
 
-
 namespace Blog.Application.Users.Commands.CreateArticle
 {
     public class CreateArticleCommand : IRequest<Guid>
