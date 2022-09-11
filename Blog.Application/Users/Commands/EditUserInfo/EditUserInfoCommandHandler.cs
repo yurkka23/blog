@@ -23,6 +23,7 @@ namespace Blog.Application.Users.Commands.EditUserInfo
                 throw new NotFoundException(nameof(User), request.Id);
             }
 
+            entity.UserName = request.UserName;
             entity.FirstName = request.FirstName;
             entity.LastName = request.LastName;
             entity.AboutMe = request.AboutMe;

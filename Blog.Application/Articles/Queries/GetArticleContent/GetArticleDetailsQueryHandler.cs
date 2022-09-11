@@ -7,7 +7,7 @@ using Blog.Domain.Models;
 using Blog.Domain.Enums;
 using AutoMapper;
 
-namespace Blog.Application.Users.Queries.GetArticleContent
+namespace Blog.Application.Articles.Queries.GetArticleContent
 {
     public class GetArticleDetailsQueryHandler : IRequestHandler<GetArticleContentQuery, ArticleContentVm>
     {

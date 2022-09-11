@@ -5,9 +5,10 @@ using MediatR;
 using Blog.Domain;
 using Blog.Application.Interfaces;
 
-namespace Blog.Application.Users.Commands.CreateArticle
+namespace Blog.Application.Articles.Commands.CreateArticle
 {
-    public class CreateArticleCommandHandler : IRequestHandler<CreateArticleCommand, Guid>
+    //logic to create article
+    public class CreateArticleCommandHandler : IRequestHandler<CreateArticleCommand, Guid>//1 request, 2 response
     {
         private readonly IBlogDbContext _dbContext;
         public CreateArticleCommandHandler(IBlogDbContext dbContext)

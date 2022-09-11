@@ -2,33 +2,43 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Blog.Persistence.ModelsConfigurations
+namespace Blog.Persistence.ModelsConfigurations;
+
+public class UserConfiguration : IEntityTypeConfiguration<User>
 {
-    public class UserConfiguration : IEntityTypeConfiguration<User>
+    public void Configure(EntityTypeBuilder<User> builder)
     {
-        public void Configure(EntityTypeBuilder<User> builder)
-        {
-            builder.HasKey(user => user.Id);
+        builder.HasKey(user => user.Id);
 
-            builder.HasIndex(user => user.Id)
-                .IsUnique();
+        builder.HasIndex(user => user.Id)
+            .IsUnique();
 
-            builder.Property(user => user.AboutMe)
-                .HasMaxLength(600);
+        builder.Property(user => user.AboutMe)
+            .HasMaxLength(600);
 
-            builder.Property(user => user.UserName)
-                .HasMaxLength(20)
-                .IsRequired();
+        builder.Property(user => user.UserName)
+            .HasMaxLength(20)
+            .IsRequired();
 
-            builder.Property(user => user.FirstName)
-                .HasMaxLength(20);
+        builder.Property(user => user.FirstName)
+            .HasMaxLength(20);
 
-            builder.Property(user => user.LastName)
-                .HasMaxLength(20);
+        builder.Property(user => user.LastName)
+            .HasMaxLength(20);
 
-            builder.HasMany<Article>(user => user.Articles)
-               .WithOne(article => article.User)
-               .HasForeignKey(article => article.UserId);
-        }
+        builder.HasMany<Article>(user => user.Articles)
+           .WithOne(article => article.User)
+           .HasForeignKey(article => article.UserId)
+           .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasMany<Rating>(user => user.Ratings)
+           .WithOne(rating => rating.User)
+           .HasForeignKey(rating => rating.UserId)
+           .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasMany<Comment>(user => user.Comments)
+           .WithOne(commet => commet.User)
+           .HasForeignKey(commet => commet.UserId)
+           .OnDelete(DeleteBehavior.Restrict);
     }
 }

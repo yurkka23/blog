@@ -2,7 +2,7 @@
 using Blog.Domain.Enums;
 using MediatR;
 
-namespace Blog.Application.Users.Queries.GetArticleList
+namespace Blog.Application.Articles.Queries.GetArticleList
 {
     public class GetArticleListQuery : IRequest<ArticleListVm>
     {
