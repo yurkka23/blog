@@ -6,12 +6,12 @@ using Blog.Application.Common.Exceptions;
 using Blog.Domain.Models;
 using Blog.Domain.Enums;
 
-namespace Blog.Application.Users.Commands.UpdateArticle
+namespace Blog.Application.Articles.Commands.UpdateArticle
 {
-    public class UpdateArticleHandler: IRequestHandler<UpdateArticleCommand>
+    public class UpdateArticleCommandHandler: IRequestHandler<UpdateArticleCommand>
     {
         private readonly IBlogDbContext _dbContext;
-        public UpdateArticleHandler(IBlogDbContext dbContext)
+        public UpdateArticleCommandHandler(IBlogDbContext dbContext)
         {
             _dbContext = dbContext;
         }
@@ -19,9 +19,13 @@ namespace Blog.Application.Users.Commands.UpdateArticle
         {
             var entity = await _dbContext.Articles.FirstOrDefaultAsync(article => article.Id == request.Id, cancellationToken);
 
-            if (entity == null || entity.UserId != request.UserId)
+            if (entity == null)
             {
                 throw new NotFoundException(nameof(Article), request.Id);
+            }
+            if(entity.UserId != request.UserId)
+            {
+                throw new NotRightsException(request.Id);
             }
 
             entity.Title = request.Title;

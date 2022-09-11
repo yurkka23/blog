@@ -1,7 +1,7 @@
 ﻿using System;
 using MediatR;
 
-namespace Blog.Application.Users.Queries.GetArticleContent
+namespace Blog.Application.Articles.Queries.GetArticleContent
 {
     public class GetArticleContentQuery: IRequest<ArticleContentVm>
     {

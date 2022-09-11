@@ -5,7 +5,7 @@ using Blog.Application.Interfaces;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 
-namespace Blog.Application.Users.Queries.GetArticleList
+namespace Blog.Application.Articles.Queries.GetArticleList
 {
     public class GetArticleListQueryHandle : IRequestHandler<GetArticleListQuery, ArticleListVm>
     {

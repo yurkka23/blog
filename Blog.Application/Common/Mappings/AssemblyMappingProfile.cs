@@ -12,7 +12,7 @@ namespace Blog.Application.Common.Mappings
             var types = assembly.GetExportedTypes()
                 .Where(type => type.GetInterfaces()
                 .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IMapWith<>)))
-                .ToList();
+                .ToList();//looking for everyone who realize interface IMapWith
 
             foreach (var type in types)
             {
