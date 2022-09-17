@@ -3,10 +3,45 @@ using Blog.Application.Common.Mappings;
 using Blog.Application.Interfaces;
 using Blog.Persistence;
 using Blog.WebApi.Middleware;
+using Blog.WebApi.Services.UserService;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.Filters;
 using System.Reflection;
+using System.Text;
+
 var builder = WebApplication.CreateBuilder(args);
 
+//add services to the cointainer
 builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddScoped<IUserService, UserService>();//
+builder.Services.AddHttpContextAccessor();//
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+    {
+        Description = "Standard Authorization header using the Bearer scheme (\"bearer {token}\")",
+        In = ParameterLocation.Header,
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey
+    });
+
+    options.OperationFilter<SecurityRequirementsOperationFilter>();
+});//
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8
+                .GetBytes(builder.Configuration.GetSection("AppSettings:Token").Value)),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+    });//
 
 builder.Services.AddAutoMapper(config =>
 {
@@ -28,7 +63,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddSwaggerGen();
+//builder.Services.AddSwaggerGen();
 
 /////////////////
 var app = builder.Build();
@@ -44,16 +79,20 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseCors("AllowAll");
+
+app.UseHttpsRedirection();
+
+app.UseAuthentication();
+
+//app.UseAuthorization();
 
 app.UseCustomExceptionHandler();
 
 app.UseRouting();
 
-app.UseHttpsRedirection();
 
-app.UseCors("AllowAll");
-
-//app.UseAuthorization();
+app.UseAuthorization();
 
 app.UseEndpoints(endpoints =>
 {
