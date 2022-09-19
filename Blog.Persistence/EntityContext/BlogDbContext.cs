@@ -4,15 +4,17 @@ using Blog.Application.Interfaces;
 using Blog.Persistence.ModelsConfigurations;
 using System;
 
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Blog.Domain;
+
 namespace Blog.Persistence.EntityContext
 {
-    public class BlogDbContext : DbContext , IBlogDbContext
+    public class BlogDbContext :  IdentityDbContext<User, ApplicationRole, Guid>, IBlogDbContext
     {
-        public DbSet<User> Users { get; set; }
+        //public DbSet<User> Users { get; set; }
         public DbSet<Article> Articles { get; set; }
         public DbSet<Rating> Ratings { get; set; }
         public DbSet<Comment> Comments { get; set; }
-
         public BlogDbContext(DbContextOptions<BlogDbContext> options): base(options) 
         {
             Database.EnsureCreated();

@@ -1,88 +1,134 @@
 ﻿using AutoMapper;
 using Blog.Application.Interfaces;
-using Blog.Application.Users.Commands.RegisterUser;
 using Blog.Domain.Models;
+using Blog.Persistence.Services;
 using Blog.WebApi.DTOs.UserDTOs;
-using Blog.WebApi.Services.UserService;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
+using System.Text;
+using Microsoft.AspNetCore.Cors;
+using Blog.Domain.Enums;
+using System.Data.Entity;
 
 namespace Blog.WebApi.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[AllowAnonymous]
 public class AuthController : BaseController
 {
-    public static User user = new User();
+   
     private readonly IConfiguration _configuration;
+    private readonly UserManager<User> _userManager;
+    private readonly SignInManager<User> _signInManager;
     private readonly IBlogDbContext _blogContext;
-    private readonly IUserService _userService;
     private readonly IMapper _mapper;
+    private readonly IUserService _userService;
 
-    public AuthController(IConfiguration configuration, IUserService userService, IBlogDbContext blogContext, IMapper mapper )
+    public AuthController(IConfiguration configuration, IUserService userService, IBlogDbContext blogContext, IMapper mapper,
+        SignInManager<User> signInManager, UserManager<User> userManager)
     {
         _configuration = configuration;
         _userService = userService;
         _blogContext = blogContext;
         _mapper = mapper;
+        _signInManager = signInManager;
+        _userManager = userManager;
     }
 
-    [HttpGet, Authorize]
-    public ActionResult<string> GetMe()
-    {
-        var userName = _userService.GetMyName();
-        return Ok(userName);
-    }
    
-    [HttpPost("register")]
-    public async Task<ActionResult<Guid>> Register([FromBody] UserLoginDTO request)////////
-    {
-        CreatePasswordHash(request.Password, out byte[] passwordHash, out byte[] passwordSalt);
 
-        //var command = _mapper.Map<RegisterUserCommand>(request).
-        var command = new RegisterUserCommand
+    [HttpPost("register")]
+    public async Task<ActionResult<User>> Register([FromBody] UserRegisterDTO request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+       
+        if (_blogContext.Users.FirstOrDefault(u => u.UserName == request.UserName) != null)
+        {
+            return BadRequest("User already exists");
+        }
+
+        User newUser = new User
         {
             UserName = request.UserName,
-            PasswordHash = passwordHash,
-            PasswordSalt = passwordSalt
+            FirstName = request.FirstName,
+            LastName = request.LastName,
+            AboutMe = request.AboutMe,
+            Role = Role.User
         };
-        var userId = await Mediator.Send(command);
+        
+        var result = await _userManager.CreateAsync(newUser, request.Password);
 
-        return Ok(userId);
+
+        if (result.Succeeded)
+        {
+            await _signInManager.SignInAsync(newUser, false);//false - if we close browser, cookie delete 
+            return Ok(newUser);//need to return another view model
+        }
+
+        return BadRequest(result.Errors);
     }
 
-    [HttpPost("login")]
+    [HttpPost("login/")]
     public async Task<ActionResult<string>> Login([FromBody] UserLoginDTO request)
     {
-        if (user.UserName != request.UserName)
+        if (!ModelState.IsValid)
         {
-            return BadRequest("User not found.");
+            return BadRequest(ModelState);
         }
 
-        if (!VerifyPasswordHash(request.Password, user.PasswordHash, user.PasswordSalt))
+        var user = _blogContext.Users.FirstOrDefault(u => u.UserName == request.UserName);
+
+        if (user == null)
         {
-            return BadRequest("Wrong password.");
+            return BadRequest("User with such username doesn't exist");
         }
 
-        string token = CreateToken(user);
+        var res = _signInManager.PasswordSignInAsync(request.UserName, request.Password,false,false);
+        var result = _signInManager.CanSignInAsync(user);
 
-        var refreshToken = GenerateRefreshToken();
-        SetRefreshToken(refreshToken);
+        if (!result.Result)
+        {
+            return BadRequest("Wrong password");
+        }
+            
 
+        var token = _userService.CreateToken(user , _configuration);
+       
+        var refreshToken = _userService.GenerateRefreshToken();
+        await _userService.SetRefreshToken(refreshToken, user, HttpContext, _blogContext, CancellationToken.None);
+        
         return Ok(token);
     }
+    [HttpGet]
+    public async Task<IActionResult> Logout()//check if work properly
+    {
+        await _signInManager.SignOutAsync();
+        return Ok();
+    }
+
 
     [HttpPost("refresh-token")]
-    public async Task<ActionResult<string>> RefreshToken()
+    public async Task<ActionResult<string>> RefreshToken([FromBody] Guid id)//redo
     {
-        var refreshToken = Request.Cookies["refreshToken"];
+        var user =  _blogContext.Users.FirstOrDefault(u => u.Id == id);
+       
 
+        var refreshToken = Request.Cookies["refreshToken"];
+        if(user == null)
+        {
+            return NotFound("Not found such user");
+        }
         if (!user.RefreshToken.Equals(refreshToken))
         {
             return Unauthorized("Invalid Refresh Token.");
@@ -92,77 +138,12 @@ public class AuthController : BaseController
             return Unauthorized("Token expired.");
         }
 
-        string token = CreateToken(user);
-        var newRefreshToken = GenerateRefreshToken();
-        SetRefreshToken(newRefreshToken);
+        string token = _userService.CreateToken(user, _configuration);
+        var newRefreshToken = _userService.GenerateRefreshToken();
+        
+        await _userService.SetRefreshToken(newRefreshToken,user,HttpContext, _blogContext, CancellationToken.None);
 
         return Ok(token);
     }
 
-    private RefreshToken GenerateRefreshToken()
-    {
-        var refreshToken = new RefreshToken
-        {
-            Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
-            Expires = DateTime.Now.AddDays(7),
-            Created = DateTime.Now
-        };
-
-        return refreshToken;
-    }
-
-    private void SetRefreshToken(RefreshToken newRefreshToken)
-    {
-        var cookieOptions = new CookieOptions
-        {
-            HttpOnly = true,
-            Expires = newRefreshToken.Expires
-        };
-        Response.Cookies.Append("refreshToken", newRefreshToken.Token, cookieOptions);
-
-        user.RefreshToken = newRefreshToken.Token;
-        user.TokenCreated = newRefreshToken.Created;
-        user.TokenExpires = newRefreshToken.Expires;
-    }
-
-    private string CreateToken(User user)
-    {
-        List<Claim> claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, user.UserName),
-                new Claim(ClaimTypes.Role, "Admin")
-            };
-
-        var key = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(
-            _configuration.GetSection("AppSettings:Token").Value));
-
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
-
-        var token = new JwtSecurityToken(
-            claims: claims,
-            expires: DateTime.Now.AddDays(1),
-            signingCredentials: creds);
-
-        var jwt = new JwtSecurityTokenHandler().WriteToken(token);
-
-        return jwt;
-    }
-
-    private void CreatePasswordHash(string password, out byte[] passwordHash, out byte[] passwordSalt)
-    {
-        using (var hmac = new HMACSHA512())
-        {
-            passwordSalt = hmac.Key;
-            passwordHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
-        }
-    }
-
-    private bool VerifyPasswordHash(string password, byte[] passwordHash, byte[] passwordSalt)
-    {
-        using (var hmac = new HMACSHA512(passwordSalt))
-        {
-            var computedHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
-            return computedHash.SequenceEqual(passwordHash);
-        }
-    }
 }

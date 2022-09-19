@@ -5,6 +5,7 @@ using Blog.Application.Ratings.Queries.GetRatingByArticle;
 using Blog.Application.Ratings.Queries.GetRatingListByUser;
 using Blog.WebApi.DTOs.RatingDTOs;
 using Blog.Application.Ratings.Commands.CreateRating;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Blog.WebApi.Controllers;
 
@@ -28,6 +29,7 @@ public class RatingController : BaseController
     }
 
     [HttpGet("GetRatingListByUser")]
+    [Authorize]
     public async Task<ActionResult<RatingListVm>> GetRatingListByUser(Guid id)
     {
         var query = new GetRatingListByUserQuery
@@ -40,6 +42,7 @@ public class RatingController : BaseController
     }
 
     [HttpPost("CreateRatingToArticle")]
+    [Authorize]
     public async Task<ActionResult<int>> CreateRating([FromBody] CreateRatingDTO createRatingDto)
     {
         var command = _mapper.Map<CreateRatingCommand>(createRatingDto);

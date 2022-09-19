@@ -3,6 +3,7 @@ using AutoMapper;
 using Blog.Application.Users.Queries.GetUserInfo;
 using Blog.WebApi.DTOs.UserDTOs;
 using Blog.Application.Users.Commands.EditUserInfo;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Blog.WebApi.Controllers;
 
@@ -14,6 +15,7 @@ public class UserContoller : BaseController
     public UserContoller(IMapper mapper) => _mapper = mapper;
 
     [HttpGet("GetUserInfoById")]
+    [Authorize]
     public async Task<ActionResult<UserInfoVm>> GetUserInfoById(Guid userId)
     {
         var vm = await Mediator.Send(new GetUserInfoQuery
@@ -25,6 +27,7 @@ public class UserContoller : BaseController
     }
 
     [HttpPut("EditUserInfo")]
+    [Authorize]
     public async Task<IActionResult> EditUserInfo([FromBody] EditUserInfoDTO editUserInfoDto)
     {
         var command = _mapper.Map<EditUserInfoCommand>(editUserInfoDto);

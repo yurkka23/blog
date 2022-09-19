@@ -5,6 +5,7 @@ using Blog.WebApi.DTOs.CommentDTOs;
 using Blog.Application.Comments.Commands.CreateComment;
 using Blog.Application.Comments.Commands.UpdateComment;
 using Blog.Application.Comments.Commands.DeleteComment;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Blog.WebApi.Controllers;
 
@@ -17,6 +18,7 @@ public class CommentController : BaseController
     public CommentController(IMapper mapper) => _mapper = mapper;
 
     [HttpGet("GetCommentsByArticle")]
+    [Authorize]
     public async Task<ActionResult<CommentListVm>> GetCommentsByArticle(Guid articleId)
     {
         var query = new GetCommentsByArticleQuery
@@ -28,6 +30,7 @@ public class CommentController : BaseController
     }
 
     [HttpPost("CreateCommentToArticle")]
+    [Authorize]
     public async Task<ActionResult<int>> CreateCommentToArticle([FromBody] CreateCommentDTO createCommentDto)
     {
         var command = _mapper.Map<CreateCommentCommand>(createCommentDto);
@@ -36,6 +39,7 @@ public class CommentController : BaseController
         return Ok(commnetId);
     }
     [HttpPut("UpdateComment")]
+    [Authorize]
     public async Task<IActionResult> UpdateComment([FromBody] UpdateCommentDTO updateCommentDto)
     {
         var command = _mapper.Map<UpdateCommentCommand>(updateCommentDto);
@@ -45,6 +49,7 @@ public class CommentController : BaseController
     }
 
     [HttpDelete("DeleteComment")]
+    [Authorize]
     public async Task<IActionResult> DeleteComment(int id)
     {
 

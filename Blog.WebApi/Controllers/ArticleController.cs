@@ -9,6 +9,8 @@ using Blog.Application.Articles.Commands.CreateArticle;
 using Blog.Application.Articles.Commands.UpdateArticle;
 using Blog.Application.Articles.Commands.VerifyArticle;
 using Blog.Application.Articles.Commands.DeleteArticle;
+using Blog.Persistence.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Blog.WebApi.Controllers;
 
@@ -17,8 +19,13 @@ namespace Blog.WebApi.Controllers;
 public class ArticleController : BaseController
 {
     private readonly IMapper _mapper;
+    private readonly IUserService _userService;
 
-    public ArticleController(IMapper mapper) => _mapper = mapper;
+    public ArticleController(IMapper mapper, IUserService userService)
+    {
+        _mapper = mapper;
+        _userService = userService;//
+    }
 
     [HttpGet("GetListOfArticles")]
     public async Task<ActionResult<ArticleListVm>> GetAllArticles()
@@ -32,6 +39,7 @@ public class ArticleController : BaseController
     }
 
     [HttpGet("GetArticleContentById")]
+    [Authorize]
     public async Task<ActionResult<ArticleContentVm>> GetArticleContentById(Guid id)
     {
         var query = new GetArticleContentQuery
@@ -44,6 +52,7 @@ public class ArticleController : BaseController
     }
 
     [HttpGet("GetUserArticles")]
+    [Authorize]
     public async Task<ActionResult<ArticleListVm>> GetUserArticles(Guid userId)
     {
         var query = new GetArticlesByUserQuery
@@ -55,16 +64,20 @@ public class ArticleController : BaseController
         return Ok(vm);
     }
 
+  
     [HttpPost("CreateArticle")]
+    [Authorize]
     public async Task<ActionResult<Guid>> CreateArticle([FromBody] CreateArticleDTO createArticleDto)
     {
         var command = _mapper.Map<CreateArticleCommand>(createArticleDto);
-        command.UserId = UserId;
+        //command.UserId = UserId;
+        command.UserId = _userService.GetUserId(HttpContext);//
         var articleId = await Mediator.Send(command);
         return Ok(articleId);
     }
 
     [HttpPut("UpdateArticle")]
+    [Authorize]
     public async Task<IActionResult> UpdateArticle([FromBody] UpdateArticleDTO updateArticleDto)
     {
         var command = _mapper.Map<UpdateArticleCommand>(updateArticleDto);
@@ -74,6 +87,7 @@ public class ArticleController : BaseController
     }
 
     [HttpPut("VerifyArticle")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> VerufyArticle([FromBody] VerifyArticleDTO verifyArticleDto)
     {
         var command = _mapper.Map<VerifyArticleCommand>(verifyArticleDto);
@@ -83,6 +97,7 @@ public class ArticleController : BaseController
     }
 
     [HttpDelete("DeleteArticle")]
+    [Authorize]
     public async Task<IActionResult> DeleteArticle(Guid id)
     {
 
