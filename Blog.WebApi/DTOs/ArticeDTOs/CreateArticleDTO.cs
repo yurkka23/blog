@@ -1,9 +1,4 @@
-﻿using Blog.Application.Articles.Commands.CreateArticle;
-using Blog.Application.Common.Mappings;
-using AutoMapper;
-using System.ComponentModel.DataAnnotations;
-
-namespace Blog.WebApi.DTOs.ArticeDTOs;
+﻿namespace Blog.WebApi.DTOs.ArticeDTOs;
 
 public class CreateArticleDTO : IMapWith<CreateArticleCommand>
 {

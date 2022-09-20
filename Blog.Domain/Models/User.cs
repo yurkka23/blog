@@ -1,6 +1,5 @@
 ﻿using Blog.Domain.Enums;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNet.Identity.EntityFramework;
 
 namespace Blog.Domain.Models;
 

@@ -1,25 +1,6 @@
-﻿using AutoMapper;
-using Blog.Application.Interfaces;
-using Blog.Domain.Models;
-using Blog.Persistence.Services;
-using Blog.WebApi.DTOs.UserDTOs;
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
-using Microsoft.AspNetCore.Cors;
-using Blog.Domain.Enums;
-using System.Data.Entity;
+﻿namespace Blog.WebApi.Controllers;
 
-namespace Blog.WebApi.Controllers;
-
-[Route("api/[controller]")]
+[Route("auth/")]
 [ApiController]
 [AllowAnonymous]
 public class AuthController : BaseController
@@ -43,17 +24,21 @@ public class AuthController : BaseController
         _userManager = userManager;
     }
 
-   
-
     [HttpPost("register")]
-    public async Task<ActionResult<User>> Register([FromBody] UserRegisterDTO request)
+    public async Task<ActionResult<Guid>> Register([FromBody] UserRegisterDTO request)
     {
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
         }
-       
-        if (_blogContext.Users.FirstOrDefault(u => u.UserName == request.UserName) != null)
+
+        var query = new CheckUserQuery
+        {
+            UserName = request.UserName
+        };
+        var existUser = await Mediator.Send(query);
+
+        if (existUser)
         {
             return BadRequest("User already exists");
         }
@@ -73,7 +58,7 @@ public class AuthController : BaseController
         if (result.Succeeded)
         {
             await _signInManager.SignInAsync(newUser, false);//false - if we close browser, cookie delete 
-            return Ok(newUser);//need to return another view model
+            return Ok(newUser.Id);
         }
 
         return BadRequest(result.Errors);
@@ -87,7 +72,8 @@ public class AuthController : BaseController
             return BadRequest(ModelState);
         }
 
-        var user = _blogContext.Users.FirstOrDefault(u => u.UserName == request.UserName);
+        var user = await _blogContext.Users.FirstOrDefaultAsync(u => u.UserName == request.UserName);
+
 
         if (user == null)
         {
@@ -110,8 +96,9 @@ public class AuthController : BaseController
         
         return Ok(token);
     }
-    [HttpGet]
-    public async Task<IActionResult> Logout()//check if work properly
+
+    [HttpGet("logout/")]
+    public async Task<IActionResult> Logout()//redo it!!!
     {
         await _signInManager.SignOutAsync();
         return Ok();
@@ -119,9 +106,9 @@ public class AuthController : BaseController
 
 
     [HttpPost("refresh-token")]
-    public async Task<ActionResult<string>> RefreshToken([FromBody] Guid id)//redo
+    public async Task<ActionResult<string>> RefreshToken(Guid id)
     {
-        var user =  _blogContext.Users.FirstOrDefault(u => u.Id == id);
+        var user = await _blogContext.Users.FirstOrDefaultAsync(u => u.Id == id);//with UserId don't find : null
        
 
         var refreshToken = Request.Cookies["refreshToken"];
@@ -129,11 +116,12 @@ public class AuthController : BaseController
         {
             return NotFound("Not found such user");
         }
+
         if (!user.RefreshToken.Equals(refreshToken))
         {
             return Unauthorized("Invalid Refresh Token.");
         }
-        else if (user.TokenExpires < DateTime.Now)
+        if (user.TokenExpires < DateTime.Now)
         {
             return Unauthorized("Token expired.");
         }

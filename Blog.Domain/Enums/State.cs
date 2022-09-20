@@ -1,9 +1,8 @@
-﻿namespace Blog.Domain.Enums
+﻿namespace Blog.Domain.Enums;
+
+public enum State
 {
-    public enum State
-    {
-        Waiting,
-        Declined,
-        Approved
-    }
+    Waiting,
+    Declined,
+    Approved
 }

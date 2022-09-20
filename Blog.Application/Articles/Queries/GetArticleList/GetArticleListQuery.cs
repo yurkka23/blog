@@ -7,6 +7,5 @@ namespace Blog.Application.Articles.Queries.GetArticleList
     public class GetArticleListQuery : IRequest<ArticleListVm>
     {
         public State State { get; set; }
-
     }
 }

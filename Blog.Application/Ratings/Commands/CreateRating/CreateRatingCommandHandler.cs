@@ -1,8 +1,5 @@
-﻿using System;
-using Blog.Domain.Enums;
-using Blog.Domain.Models;
+﻿using Blog.Domain.Models;
 using MediatR;
-using Blog.Domain;
 using Blog.Application.Interfaces;
 
 namespace Blog.Application.Ratings.Commands.CreateRating;

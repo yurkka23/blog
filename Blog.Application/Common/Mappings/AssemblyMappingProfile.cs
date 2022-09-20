@@ -1,26 +1,26 @@
 ﻿using AutoMapper;
 using System.Reflection;
-namespace Blog.Application.Common.Mappings
+
+namespace Blog.Application.Common.Mappings;
+
+public class AssemblyMappingProfile : Profile
 {
-    public class AssemblyMappingProfile : Profile
+    public AssemblyMappingProfile(Assembly assembly) =>
+        ApplyMappingAssenbly(assembly);
+
+    private void ApplyMappingAssenbly(Assembly assembly)
     {
-        public AssemblyMappingProfile(Assembly assembly) =>
-            ApplyMappingAssenbly(assembly);
+        var types = assembly.GetExportedTypes()
+            .Where(type => type.GetInterfaces()
+            .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IMapWith<>)))
+            .ToList();//looking for everyone who realize interface IMapWith
 
-        private void ApplyMappingAssenbly(Assembly assembly)
+        foreach (var type in types)
         {
-            var types = assembly.GetExportedTypes()
-                .Where(type => type.GetInterfaces()
-                .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IMapWith<>)))
-                .ToList();//looking for everyone who realize interface IMapWith
+            var instance = Activator.CreateInstance(type);
+            var methodInfo = type.GetMethod("Mapping");
+            methodInfo?.Invoke(instance, new object[] { this });
 
-            foreach (var type in types)
-            {
-                var instance = Activator.CreateInstance(type);
-                var methodInfo = type.GetMethod("Mapping");
-                methodInfo?.Invoke(instance, new object[] { this });
-
-            }
         }
     }
 }

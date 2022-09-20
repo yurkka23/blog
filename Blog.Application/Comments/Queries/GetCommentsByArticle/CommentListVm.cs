@@ -1,6 +1,4 @@
-﻿
-
-namespace Blog.Application.Comments.Queries.GetCommentsByArticle;
+﻿namespace Blog.Application.Comments.Queries.GetCommentsByArticle;
 
 public class CommentListVm
 {

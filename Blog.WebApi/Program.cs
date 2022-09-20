@@ -1,39 +1,18 @@
-using Blog.Application;
-using Blog.Application.Common.Mappings;
-using Blog.Application.Interfaces;
-using Blog.Domain;
-using Blog.Domain.Models;
-using Blog.Persistence;
-using Blog.Persistence.EntityContext;
-using Blog.Persistence.Services;
-using Blog.WebApi.Middleware;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
-using Swashbuckle.AspNetCore.Filters;
-using System.Reflection;
-using System.Text;
-
 var builder = WebApplication.CreateBuilder(args);
 
 //add services to the cointainer
 builder.Services.AddEndpointsApiExplorer();
-
-
-builder.Services.AddHttpContextAccessor();//
-builder.Services.AddScoped<IUserService, UserService>();//
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddApplication();
 builder.Services.AddPersistance(builder.Configuration);
 builder.Services.AddControllers();
-
 
 builder.Services.AddAutoMapper(config =>
 {
     config.AddProfile(new AssemblyMappingProfile(Assembly.GetExecutingAssembly()));
     config.AddProfile(new AssemblyMappingProfile(typeof(IBlogDbContext).Assembly));
 });
-
 
 builder.Services.AddCors(options =>
 {
@@ -44,6 +23,7 @@ builder.Services.AddCors(options =>
         policy.AllowAnyOrigin();
     });
 });
+
 builder.Services.AddSwaggerGen(options =>
 {
     options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
@@ -54,23 +34,8 @@ builder.Services.AddSwaggerGen(options =>
         Name = "Authorization",
         Type = SecuritySchemeType.ApiKey
     });
-    //options.AddSecurityRequirement(new OpenApiSecurityRequirement {
-    //                {
-    //                    new OpenApiSecurityScheme
-    //                    {
-    //                        Reference = new OpenApiReference
-    //                        {
-    //                            Type = ReferenceType.SecurityScheme,
-    //                            Id = "bearer"
-    //                        }
-    //                    },
-    //                    new string[] { }
-    //                }
-    //            });
-
     options.OperationFilter<SecurityRequirementsOperationFilter>();
 });
-
 
 builder.Services.AddIdentity<User, ApplicationRole>()
     .AddEntityFrameworkStores<BlogDbContext>()
@@ -93,8 +58,6 @@ builder.Services.AddAuthentication(options => {
         };
     });
 
-
-
 builder.Services.Configure<IdentityOptions>(options =>
 {
     options.Password.RequireDigit = false;
@@ -114,7 +77,8 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
 
 builder.Services.AddHttpClient();
 
-/////////////////
+
+//build pipeline
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -134,10 +98,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 
-app.UseCustomExceptionHandler();
-
 app.UseRouting();
-
 
 app.UseAuthorization();
 
@@ -148,7 +109,6 @@ app.UseEndpoints(endpoints =>
 
 app.MapControllers();
 
+app.UseCustomExceptionHandler();
+
 app.Run();
-
-
-

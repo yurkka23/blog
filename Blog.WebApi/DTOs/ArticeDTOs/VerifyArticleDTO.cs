@@ -1,19 +1,14 @@
-﻿using AutoMapper;
-using Blog.Application.Articles.Commands.VerifyArticle;
-using Blog.Application.Common.Mappings;
-using Blog.Domain.Enums;
+﻿namespace Blog.WebApi.DTOs.ArticeDTOs;
 
-namespace Blog.WebApi.DTOs.ArticeDTOs
+public class VerifyArticleDTO : IMapWith<VerifyArticleCommand>
 {
-    public class VerifyArticleDTO : IMapWith<VerifyArticleCommand>
-    {
-        public Guid Id { get; set; }
-        public State State { get; set; }
-        public Role Role { get; set; }
+    [Required]
+    public Guid Id { get; set; }
+    [Required]
+    public State State { get; set; }
 
-        public void Mapping(Profile profile)
-        {
-            profile.CreateMap<VerifyArticleDTO, VerifyArticleCommand>();
-        }
+    public void Mapping(Profile profile)
+    {
+        profile.CreateMap<VerifyArticleDTO, VerifyArticleCommand>();
     }
 }

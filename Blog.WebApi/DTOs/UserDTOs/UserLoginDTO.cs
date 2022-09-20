@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Blog.WebApi.DTOs.UserDTOs;
+﻿namespace Blog.WebApi.DTOs.UserDTOs;
 
 public class UserLoginDTO
 {

@@ -1,7 +1,7 @@
 ﻿using FluentValidation;
 
 namespace Blog.Application.Ratings.Queries.GetRatingListByUser;
-internal class GetRatingListByUserQueryValidator : AbstractValidator<GetRatingListByUserQuery>
+public class GetRatingListByUserQueryValidator : AbstractValidator<GetRatingListByUserQuery>
 {
     public GetRatingListByUserQueryValidator()
     {

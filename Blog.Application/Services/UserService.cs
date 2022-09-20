@@ -9,21 +9,10 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Blog.Persistence.Services;
+namespace Blog.Application.Services;
 
 public class UserService : IUserService
 {
-    public Guid GetUserId(HttpContext context)
-    {
-        //if (!context.User.Identity.IsAuthenticated)
-        //{
-        //     throw new Exception("Not authenticated");
-        //}
-        var identity = context.User.Identity as ClaimsIdentity;
-        var id = identity!.FindFirst(ClaimTypes.NameIdentifier)!.Value;
-        return Guid.Parse(id);
-    }
-
     public bool IsAdmin(HttpContext context)
     {
         var identity = context.User.Identity as ClaimsIdentity;
@@ -43,9 +32,9 @@ public class UserService : IUserService
 
         return refreshToken;
     }
-    public async Task SetRefreshToken(RefreshToken token, User user, HttpContext context, IBlogDbContext blogDbContext , CancellationToken cancellationToken)
+    public async Task SetRefreshToken(RefreshToken token, User user, HttpContext context, IBlogDbContext blogDbContext, CancellationToken cancellationToken)
     {
-      
+
         var cookieOpts = new CookieOptions
         {
             HttpOnly = true,
@@ -71,7 +60,7 @@ public class UserService : IUserService
                 new Claim(ClaimTypes.Name, user.UserName),
                 new Claim(ClaimTypes.Role, user.Role.ToString()),
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-               
+
             };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
@@ -88,5 +77,4 @@ public class UserService : IUserService
 
         return jwt;
     }
-    
 }

@@ -3,7 +3,5 @@
 namespace Blog.Domain;
 
 public class ApplicationRole : IdentityRole<Guid>
-{
-   
+{ 
 }
-

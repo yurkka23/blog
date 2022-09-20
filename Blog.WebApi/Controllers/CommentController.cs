@@ -1,13 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using AutoMapper;
-using Blog.Application.Comments.Queries.GetCommentsByArticle;
-using Blog.WebApi.DTOs.CommentDTOs;
-using Blog.Application.Comments.Commands.CreateComment;
-using Blog.Application.Comments.Commands.UpdateComment;
-using Blog.Application.Comments.Commands.DeleteComment;
-using Microsoft.AspNetCore.Authorization;
-
-namespace Blog.WebApi.Controllers;
+﻿namespace Blog.WebApi.Controllers;
 
 [Route("comment/")]
 [ApiController]
@@ -38,6 +29,7 @@ public class CommentController : BaseController
         var commnetId = await Mediator.Send(command);
         return Ok(commnetId);
     }
+
     [HttpPut("UpdateComment")]
     [Authorize]
     public async Task<IActionResult> UpdateComment([FromBody] UpdateCommentDTO updateCommentDto)

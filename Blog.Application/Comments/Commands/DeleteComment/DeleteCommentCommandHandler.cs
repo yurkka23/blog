@@ -3,6 +3,7 @@ using Blog.Application.Interfaces;
 using Blog.Domain.Enums;
 using Blog.Domain.Models;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Blog.Application.Comments.Commands.DeleteComment;
 
@@ -15,7 +16,8 @@ public class DeleteCommentCommandHandler : IRequestHandler<DeleteCommentCommand>
     }
     public async Task<Unit> Handle(DeleteCommentCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _dbContext.Comments.FindAsync(new object[] { request.Id }, cancellationToken);
+        //var entity = await _dbContext.Comments.FindAsync(new object[] { request.Id }, cancellationToken);
+        var entity = await _dbContext.Comments.FirstOrDefaultAsync(ent => ent.Id == request.Id, cancellationToken);
 
         if (entity == null)
         {

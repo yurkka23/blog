@@ -1,5 +1,4 @@
-﻿using System;
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace Blog.Application.Articles.Commands.DeleteArticle;
 

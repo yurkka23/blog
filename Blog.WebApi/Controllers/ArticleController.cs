@@ -1,30 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Blog.Application.Articles.Queries.GetArticleList;
-using Blog.Domain.Enums;
-using Blog.Application.Articles.Queries.GetArticleContent;
-using AutoMapper;
-using Blog.Application.Articles.Queries.GetArticlesByUser;
-using Blog.WebApi.DTOs.ArticeDTOs;
-using Blog.Application.Articles.Commands.CreateArticle;
-using Blog.Application.Articles.Commands.UpdateArticle;
-using Blog.Application.Articles.Commands.VerifyArticle;
-using Blog.Application.Articles.Commands.DeleteArticle;
-using Blog.Persistence.Services;
-using Microsoft.AspNetCore.Authorization;
-
-namespace Blog.WebApi.Controllers;
+﻿namespace Blog.WebApi.Controllers;
 
 [Route("article/")]
 [ApiController]
 public class ArticleController : BaseController
 {
     private readonly IMapper _mapper;
-    private readonly IUserService _userService;
 
-    public ArticleController(IMapper mapper, IUserService userService)
+    public ArticleController(IMapper mapper)
     {
         _mapper = mapper;
-        _userService = userService;//
     }
 
     [HttpGet("GetListOfArticles")]
@@ -53,11 +37,11 @@ public class ArticleController : BaseController
 
     [HttpGet("GetUserArticles")]
     [Authorize]
-    public async Task<ActionResult<ArticleListVm>> GetUserArticles(Guid userId)
+    public async Task<ActionResult<ArticleListVm>> GetUserArticles()//Guid userId
     {
         var query = new GetArticlesByUserQuery
         {
-            UserId = userId
+            UserId = UserId//
         };
         var vm = await Mediator.Send(query);
       
@@ -70,8 +54,8 @@ public class ArticleController : BaseController
     public async Task<ActionResult<Guid>> CreateArticle([FromBody] CreateArticleDTO createArticleDto)
     {
         var command = _mapper.Map<CreateArticleCommand>(createArticleDto);
-        //command.UserId = UserId;
-        command.UserId = _userService.GetUserId(HttpContext);//
+        command.UserId = UserId;
+        //command.UserId = _userService.GetUserId(HttpContext);//
         var articleId = await Mediator.Send(command);
         return Ok(articleId);
     }
@@ -88,10 +72,10 @@ public class ArticleController : BaseController
 
     [HttpPut("VerifyArticle")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> VerufyArticle([FromBody] VerifyArticleDTO verifyArticleDto)
+    public async Task<IActionResult> VerufyArticle([FromBody] VerifyArticleDTO verifyArticleDto)//without role 
     {
         var command = _mapper.Map<VerifyArticleCommand>(verifyArticleDto);
-        command.UserId = UserId;
+        command.Role = UserRole == "User" ? Role.User : Role.Admin;
         await Mediator.Send(command);
         return NoContent();
     }

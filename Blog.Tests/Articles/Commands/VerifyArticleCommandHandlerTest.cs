@@ -13,9 +13,9 @@ public class VerifyArticleCommandHandlerTest : TestCommandBase
         await handler.Handle(new VerifyArticleCommand
         {
             Id = BlogContextFactory.ArticleIdForUpdate,
-            UserId = BlogContextFactory.UserBId,
+           // UserId = BlogContextFactory.UserBId,
             Role = Role.Admin,
-            state = State.Approved
+            State = State.Approved
         }, CancellationToken.None);
         //Assert
         Assert.NotNull(await Context.Articles.SingleOrDefaultAsync(art =>
@@ -33,9 +33,9 @@ public class VerifyArticleCommandHandlerTest : TestCommandBase
         await handler.Handle(new VerifyArticleCommand
         {
             Id = BlogContextFactory.ArticleIdForDelete,
-            UserId = BlogContextFactory.UserAId,
+            //UserId = BlogContextFactory.UserAId,
             Role = Role.Admin,
-            state = State.Declined
+            State = State.Declined
         }, CancellationToken.None);
 
         //Assert
@@ -53,9 +53,9 @@ public class VerifyArticleCommandHandlerTest : TestCommandBase
         await handler.Handle(new VerifyArticleCommand
         {
             Id = BlogContextFactory.ArticleIdForDelete,
-            UserId = BlogContextFactory.UserAId,
+            //UserId = BlogContextFactory.UserAId,
             Role = Role.Admin,
-            state = State.Waiting
+            State = State.Waiting
         }, CancellationToken.None);
 
         //Assert
@@ -77,9 +77,9 @@ public class VerifyArticleCommandHandlerTest : TestCommandBase
               await handler.Handle(new VerifyArticleCommand
               {
                   Id = BlogContextFactory.ArticleIdForUpdate,
-                  UserId = BlogContextFactory.UserBId,
+                  //UserId = BlogContextFactory.UserBId,
                   Role = Role.User,
-                  state = State.Approved
+                  State = State.Approved
               }, CancellationToken.None));
     }
     [Fact]
@@ -95,9 +95,9 @@ public class VerifyArticleCommandHandlerTest : TestCommandBase
               await handler.Handle(new VerifyArticleCommand
               {
                   Id = Guid.Empty,
-                  UserId = BlogContextFactory.UserBId,
+                  //UserId = BlogContextFactory.UserBId,
                   Role = Role.Admin,
-                  state = State.Approved
+                  State = State.Approved
               }, CancellationToken.None));
     }
 }

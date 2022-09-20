@@ -1,15 +1,13 @@
-﻿using System;
-using FluentValidation;
+﻿using FluentValidation;
 
-namespace Blog.Application.Users.Queries.GetUserInfo
+namespace Blog.Application.Users.Queries.GetUserInfo;
+
+public class GetUserInfoQueryValidator : AbstractValidator<GetUserInfoQuery>
 {
-    public class GetUserInfoQueryValidator : AbstractValidator<GetUserInfoQuery>
+    public GetUserInfoQueryValidator()
     {
-        public GetUserInfoQueryValidator()
-        {
-           RuleFor(user => user.Id)
-                .NotEqual(Guid.Empty)
-                .WithMessage("User id must not be empty");
-        }
+       RuleFor(user => user.Id)
+            .NotEqual(Guid.Empty)
+            .WithMessage("User id must not be empty");
     }
 }

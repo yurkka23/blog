@@ -1,5 +1,4 @@
-﻿using System;
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace Blog.Application.Articles.Queries.GetArticlesByUser;
 
@@ -7,6 +6,8 @@ public class GetArticlesByUserQueryValidator: AbstractValidator<GetArticlesByUse
 {
     public GetArticlesByUserQueryValidator()
     {
-        RuleFor(article => article.UserId).NotEqual(Guid.Empty).WithMessage("Article must have user Id");
+        RuleFor(article => article.UserId)
+            .NotEqual(Guid.Empty)
+            .WithMessage("Article must have user Id");
     }
 }

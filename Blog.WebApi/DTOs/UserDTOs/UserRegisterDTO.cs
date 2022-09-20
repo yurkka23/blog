@@ -1,13 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Blog.WebApi.DTOs.UserDTOs;
+﻿namespace Blog.WebApi.DTOs.UserDTOs;
 
 public class UserRegisterDTO
 {
     [Required]
-
     public string UserName { get; set; } = null!;
-
     [Required]
     public string FirstName { get; set; } = null!;
     [Required]
