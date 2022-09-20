@@ -1,5 +1,4 @@
-﻿using System;
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace Blog.Application.Articles.Queries.GetArticleContent;
 
@@ -7,6 +6,8 @@ public class GetArticleContentQueryValidator : AbstractValidator<GetArticleConte
 {
     public GetArticleContentQueryValidator()
     {
-        RuleFor(article => article.Id).NotEqual(Guid.Empty).WithMessage("Article must have Id");
+        RuleFor(article => article.Id)
+            .NotEqual(Guid.Empty)
+            .WithMessage("Article must have Id");
     }
 }

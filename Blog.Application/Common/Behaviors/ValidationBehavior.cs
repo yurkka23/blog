@@ -1,10 +1,5 @@
 ﻿using FluentValidation;
 using MediatR;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Blog.Application.Common.Behaviors
 {
@@ -23,6 +18,7 @@ namespace Blog.Application.Common.Behaviors
                 .SelectMany(result => result.Errors)
                 .Where(failure => failure != null)
                 .ToList();
+
             if(failures.Count != 0)
             {
                 throw new ValidationException(failures);

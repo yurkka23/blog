@@ -1,15 +1,12 @@
-﻿using System;
-using Blog.Domain.Enums;
+﻿using Blog.Domain.Enums;
 using MediatR;
 
-namespace Blog.Application.Articles.Commands.VerifyArticle
+namespace Blog.Application.Articles.Commands.VerifyArticle;
+
+public class VerifyArticleCommand : IRequest
 {
-    public class VerifyArticleCommand : IRequest
-    {
-        public Guid Id { set; get; }
-        public State state { set; get; }
-        public Guid UserId { set; get; }
-        public Role Role { set; get; }
-        
-    }
+    public Guid Id { set; get; }
+    public State State { set; get; }
+    public Role Role { set; get; }
+    
 }

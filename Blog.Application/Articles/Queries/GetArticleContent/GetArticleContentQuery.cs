@@ -1,10 +1,8 @@
-﻿using System;
-using MediatR;
+﻿using MediatR;
 
-namespace Blog.Application.Articles.Queries.GetArticleContent
+namespace Blog.Application.Articles.Queries.GetArticleContent;
+
+public class GetArticleContentQuery: IRequest<ArticleContentVm>
 {
-    public class GetArticleContentQuery: IRequest<ArticleContentVm>
-    {
-        public Guid Id { get; set; }
-    }
+    public Guid Id { get; set; }
 }

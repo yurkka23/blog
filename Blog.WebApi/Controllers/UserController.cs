@@ -1,8 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using AutoMapper;
-using Blog.Application.Users.Queries.GetUserInfo;
-using Blog.WebApi.DTOs.UserDTOs;
-using Blog.Application.Users.Commands.EditUserInfo;
+﻿using Blog.Application.Users.Queries.CheckUser;
 
 namespace Blog.WebApi.Controllers;
 
@@ -14,6 +10,7 @@ public class UserContoller : BaseController
     public UserContoller(IMapper mapper) => _mapper = mapper;
 
     [HttpGet("GetUserInfoById")]
+    [Authorize]
     public async Task<ActionResult<UserInfoVm>> GetUserInfoById(Guid userId)
     {
         var vm = await Mediator.Send(new GetUserInfoQuery
@@ -24,9 +21,33 @@ public class UserContoller : BaseController
         return Ok(vm);
     }
 
+    [HttpGet("GetMyInfo")]
+    [Authorize]
+    public async Task<ActionResult<UserInfoVm>> GetMyInfo()
+    {
+        var vm = await Mediator.Send(new GetUserInfoQuery
+        {
+            Id = UserId
+        });
+
+        return Ok(vm);
+    }
+
     [HttpPut("EditUserInfo")]
+    [Authorize]
     public async Task<IActionResult> EditUserInfo([FromBody] EditUserInfoDTO editUserInfoDto)
     {
+        var query = new CheckUserQuery
+        {
+            UserName = editUserInfoDto.UserName
+        };
+        var existUser = await Mediator.Send(query);
+
+        if (existUser)
+        {
+            return BadRequest("User already exists");
+        }
+
         var command = _mapper.Map<EditUserInfoCommand>(editUserInfoDto);
         command.Id = UserId;
         await Mediator.Send(command);

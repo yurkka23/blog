@@ -1,12 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using AutoMapper;
-using Blog.Application.Ratings.Queries;
-using Blog.Application.Ratings.Queries.GetRatingByArticle;
-using Blog.Application.Ratings.Queries.GetRatingListByUser;
-using Blog.WebApi.DTOs.RatingDTOs;
-using Blog.Application.Ratings.Commands.CreateRating;
-
-namespace Blog.WebApi.Controllers;
+﻿namespace Blog.WebApi.Controllers;
 
 [Route("rating/")]
 [ApiController]
@@ -28,11 +20,12 @@ public class RatingController : BaseController
     }
 
     [HttpGet("GetRatingListByUser")]
-    public async Task<ActionResult<RatingListVm>> GetRatingListByUser(Guid id)
+    [Authorize]
+    public async Task<ActionResult<RatingListVm>> GetRatingListByUser()///Guid id
     {
         var query = new GetRatingListByUserQuery
         {
-            UserId = id
+            UserId = UserId
         };
         var vm = await Mediator.Send(query);
 
@@ -40,6 +33,7 @@ public class RatingController : BaseController
     }
 
     [HttpPost("CreateRatingToArticle")]
+    [Authorize]
     public async Task<ActionResult<int>> CreateRating([FromBody] CreateRatingDTO createRatingDto)
     {
         var command = _mapper.Map<CreateRatingCommand>(createRatingDto);

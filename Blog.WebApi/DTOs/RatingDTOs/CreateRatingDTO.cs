@@ -1,13 +1,10 @@
-﻿using Blog.Application.Common.Mappings;
-using AutoMapper;
-using Blog.Application.Ratings.Commands.CreateRating;
-
-namespace Blog.WebApi.DTOs.RatingDTOs;
+﻿namespace Blog.WebApi.DTOs.RatingDTOs;
 
 public class CreateRatingDTO  : IMapWith<CreateRatingCommand>
 {
-   // public int Id { get; set; }
+    [Required]
     public Guid ArticleId { get; set; }
+    [Required]
     public byte Score { get; set; }
     public void Mapping(Profile profile)
     {

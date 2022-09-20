@@ -23,6 +23,7 @@ public class GetArticlesByUserQueryHandle : IRequestHandler<GetArticlesByUserQue
     {
         
         var articleQuery = await _dbContext.Articles
+            .Include(a => a.Ratings)
             .Where(article => article.UserId == request.UserId)
             .ProjectTo<ArticleLookupDto>(_mapper.ConfigurationProvider)
             .ToListAsync(cancellationToken);

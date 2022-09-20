@@ -1,12 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using AutoMapper;
-using Blog.Application.Comments.Queries.GetCommentsByArticle;
-using Blog.WebApi.DTOs.CommentDTOs;
-using Blog.Application.Comments.Commands.CreateComment;
-using Blog.Application.Comments.Commands.UpdateComment;
-using Blog.Application.Comments.Commands.DeleteComment;
-
-namespace Blog.WebApi.Controllers;
+﻿namespace Blog.WebApi.Controllers;
 
 [Route("comment/")]
 [ApiController]
@@ -17,6 +9,7 @@ public class CommentController : BaseController
     public CommentController(IMapper mapper) => _mapper = mapper;
 
     [HttpGet("GetCommentsByArticle")]
+    [Authorize]
     public async Task<ActionResult<CommentListVm>> GetCommentsByArticle(Guid articleId)
     {
         var query = new GetCommentsByArticleQuery
@@ -28,6 +21,7 @@ public class CommentController : BaseController
     }
 
     [HttpPost("CreateCommentToArticle")]
+    [Authorize]
     public async Task<ActionResult<int>> CreateCommentToArticle([FromBody] CreateCommentDTO createCommentDto)
     {
         var command = _mapper.Map<CreateCommentCommand>(createCommentDto);
@@ -35,7 +29,9 @@ public class CommentController : BaseController
         var commnetId = await Mediator.Send(command);
         return Ok(commnetId);
     }
+
     [HttpPut("UpdateComment")]
+    [Authorize]
     public async Task<IActionResult> UpdateComment([FromBody] UpdateCommentDTO updateCommentDto)
     {
         var command = _mapper.Map<UpdateCommentCommand>(updateCommentDto);
@@ -45,6 +41,7 @@ public class CommentController : BaseController
     }
 
     [HttpDelete("DeleteComment")]
+    [Authorize]
     public async Task<IActionResult> DeleteComment(int id)
     {
 

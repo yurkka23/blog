@@ -1,8 +1,7 @@
-﻿namespace Blog.Domain.Enums
+﻿namespace Blog.Domain.Enums;
+
+public enum Role
 {
-    public enum Role
-    {
-        Admin,
-        User
-    }
+    Admin,
+    User
 }

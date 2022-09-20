@@ -2,7 +2,6 @@
 using AutoMapper.QueryableExtensions;
 using Blog.Application.Common.Exceptions;
 using Blog.Application.Interfaces;
-using Blog.Application.Ratings.Queries.GetRatingByArticle;
 using Blog.Domain.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;

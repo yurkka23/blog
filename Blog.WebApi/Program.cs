@@ -1,22 +1,18 @@
-using Blog.Application;
-using Blog.Application.Common.Mappings;
-using Blog.Application.Interfaces;
-using Blog.Persistence;
-using Blog.WebApi.Middleware;
-using System.Reflection;
 var builder = WebApplication.CreateBuilder(args);
 
+//add services to the cointainer
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddApplication();
+builder.Services.AddPersistance(builder.Configuration);
+builder.Services.AddControllers();
 
 builder.Services.AddAutoMapper(config =>
 {
     config.AddProfile(new AssemblyMappingProfile(Assembly.GetExecutingAssembly()));
     config.AddProfile(new AssemblyMappingProfile(typeof(IBlogDbContext).Assembly));
 });
-
-builder.Services.AddApplication();
-builder.Services.AddPersistance(builder.Configuration);
-builder.Services.AddControllers();
 
 builder.Services.AddCors(options =>
 {
@@ -28,9 +24,61 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+    {
+        Description = "Standard Authorization header using the Bearer scheme (\"bearer {token}\")",
+        In = ParameterLocation.Header,
+        BearerFormat = "JWT",
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey
+    });
+    options.OperationFilter<SecurityRequirementsOperationFilter>();
+});
 
-/////////////////
+builder.Services.AddIdentity<User, ApplicationRole>()
+    .AddEntityFrameworkStores<BlogDbContext>()
+    .AddDefaultTokenProviders();
+
+builder.Services.AddAuthentication(options => {
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+    .AddJwtBearer("Bearer",options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8
+                .GetBytes(builder.Configuration.GetSection("AppSettings:Token").Value)),
+            ValidateIssuer = false,
+            ValidateAudience = false,
+        };
+    });
+
+builder.Services.Configure<IdentityOptions>(options =>
+{
+    options.Password.RequireDigit = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequiredLength = 4;
+    options.Password.RequiredUniqueChars = 0;
+});
+
+//Add cookie
+builder.Services.Configure<CookiePolicyOptions>(options =>
+{
+    options.CheckConsentNeeded = context => true;
+    options.MinimumSameSitePolicy = SameSiteMode.None;
+});
+
+builder.Services.AddHttpClient();
+
+
+//build pipeline
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -44,16 +92,15 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-
-app.UseCustomExceptionHandler();
-
-app.UseRouting();
+app.UseCors("AllowAll");
 
 app.UseHttpsRedirection();
 
-app.UseCors("AllowAll");
+app.UseAuthentication();
 
-//app.UseAuthorization();
+app.UseRouting();
+
+app.UseAuthorization();
 
 app.UseEndpoints(endpoints =>
 {
@@ -62,55 +109,6 @@ app.UseEndpoints(endpoints =>
 
 app.MapControllers();
 
+app.UseCustomExceptionHandler();
+
 app.Run();
-
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//using Infrastructure.EntityFramework;
-//using Microsoft.AspNetCore.Hosting;
-//using Microsoft.Extensions.Configuration;
-//using Microsoft.Extensions.DependencyInjection;
-//using Microsoft.Extensions.Hosting;
-//using Microsoft.Extensions.Logging;
-//using System;
-//using System.Collections.Generic;
-//using System.Linq;
-//using System.Threading.Tasks;
-
-//namespace Blog
-//{
-//    public class Program
-//    {
-//        public static void Main(string[] args)
-//        {
-//            var host = CreateHostBuilder(args).Build();
-
-//            using (var scope = host.Services.CreateScope())
-//            {
-//                var serviceProvider = scope.ServiceProvider;
-//                try
-//                {
-//                    var context = serviceProvider.GetRequiredService<BlogDbContext>();
-//                    //DbInitializer.Initialize(context);
-//                }
-//                catch(Exception e)
-//                {
-//                    Console.WriteLine(e.Message);
-//                }
-                
-
-//            }
-
-//            host.Run();
-//        }
-
-//        public static IHostBuilder CreateHostBuilder(string[] args) =>
-//            Host.CreateDefaultBuilder(args)
-//                .ConfigureWebHostDefaults(webBuilder =>
-//                {
-//                    webBuilder.UseStartup<Startup>();
-//                });
-//    }
-//}
