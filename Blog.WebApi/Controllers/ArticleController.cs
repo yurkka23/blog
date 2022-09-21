@@ -37,11 +37,11 @@ public class ArticleController : BaseController
 
     [HttpGet("GetUserArticles")]
     [Authorize]
-    public async Task<ActionResult<ArticleListVm>> GetUserArticles()//Guid userId
+    public async Task<ActionResult<ArticleListVm>> GetUserArticles()
     {
         var query = new GetArticlesByUserQuery
         {
-            UserId = UserId//
+            UserId = UserId
         };
         var vm = await Mediator.Send(query);
       
@@ -50,12 +50,11 @@ public class ArticleController : BaseController
 
   
     [HttpPost("CreateArticle")]
-    [Authorize]
+    [Authorize(Roles = "User")]
     public async Task<ActionResult<Guid>> CreateArticle([FromBody] CreateArticleDTO createArticleDto)
     {
         var command = _mapper.Map<CreateArticleCommand>(createArticleDto);
         command.UserId = UserId;
-        //command.UserId = _userService.GetUserId(HttpContext);//
         var articleId = await Mediator.Send(command);
         return Ok(articleId);
     }
@@ -75,7 +74,7 @@ public class ArticleController : BaseController
     public async Task<IActionResult> VerufyArticle([FromBody] VerifyArticleDTO verifyArticleDto)//without role 
     {
         var command = _mapper.Map<VerifyArticleCommand>(verifyArticleDto);
-        command.Role = UserRole == "User" ? Role.User : Role.Admin;
+        command.Role = UserRole == "User" ? Role.User : Role.Admin;//not requered
         await Mediator.Send(command);
         return NoContent();
     }

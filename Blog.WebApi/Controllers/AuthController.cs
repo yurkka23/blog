@@ -1,8 +1,10 @@
-﻿namespace Blog.WebApi.Controllers;
+﻿using System.Linq;
+
+namespace Blog.WebApi.Controllers;
 
 [Route("auth/")]
 [ApiController]
-[AllowAnonymous]
+
 public class AuthController : BaseController
 {
    
@@ -23,7 +25,7 @@ public class AuthController : BaseController
         _signInManager = signInManager;
         _userManager = userManager;
     }
-
+    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<ActionResult<Guid>> Register([FromBody] UserRegisterDTO request)
     {
@@ -63,7 +65,7 @@ public class AuthController : BaseController
 
         return BadRequest(result.Errors);
     }
-
+    [AllowAnonymous]
     [HttpPost("login/")]
     public async Task<ActionResult<string>> Login([FromBody] UserLoginDTO request)
     {
@@ -83,12 +85,12 @@ public class AuthController : BaseController
         var res = _signInManager.PasswordSignInAsync(request.UserName, request.Password,false,false);
         var result = _signInManager.CanSignInAsync(user);
 
-        if (!result.Result)
+        if (!res.Result.Succeeded)
         {
             return BadRequest("Wrong password");
         }
-            
 
+       
         var token = _userService.CreateToken(user , _configuration);
        
         var refreshToken = _userService.GenerateRefreshToken();
@@ -97,6 +99,7 @@ public class AuthController : BaseController
         return Ok(token);
     }
 
+    [Authorize]
     [HttpGet("logout/")]
     public async Task<IActionResult> Logout()//redo it!!!
     {
@@ -104,11 +107,14 @@ public class AuthController : BaseController
         return Ok();
     }
 
-
+    [Authorize]
     [HttpPost("refresh-token")]
-    public async Task<ActionResult<string>> RefreshToken(Guid id)
+    public async Task<ActionResult<string>> RefreshToken()
     {
-        var user = await _blogContext.Users.FirstOrDefaultAsync(u => u.Id == id);//with UserId don't find : null
+        //var myid = ClaimTypes.NameIdentifier.ToString();
+        Guid UserId1 = Guid.Parse(HttpContext.User.FindFirst(ClaimTypes.NameIdentifier.ToString()).Value);
+
+    var user = await _blogContext.Users.FirstOrDefaultAsync(u => u.Id == UserId1);//with UserId don't find : null
        
 
         var refreshToken = Request.Cookies["refreshToken"];
