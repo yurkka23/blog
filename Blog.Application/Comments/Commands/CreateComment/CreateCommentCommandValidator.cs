@@ -8,11 +8,11 @@ public class CreateCommentCommandValidator : AbstractValidator<CreateCommentComm
     {
         RuleFor(command => command.Message)
             .NotEmpty()
-            .WithMessage("Massage must not be empty!");
-
-        RuleFor(command => command.Message)
+            .WithMessage("Massage must not be empty!")
             .MaximumLength(200)
             .WithMessage("Massage must not be longer then 200!");
+
+       
 
         RuleFor(command => command.ArticleId)
             .NotEqual(Guid.Empty)

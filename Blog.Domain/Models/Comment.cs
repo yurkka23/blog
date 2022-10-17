@@ -3,10 +3,9 @@
 public class Comment 
 {
     public int Id { get; set; } 
-    public string Message { get; set; } = null!;
-
+    public string Message { get; set; } = string.Empty;
     public Guid UserId { get; set; }
-    public User User { get; set; } = null!;
+    public User User { get; set; }
     public Guid ArticleId { get; set; }
-    public Article Article { get; set; } = null!;
+    public Article Article { get; set; } 
 }

@@ -48,3 +48,13 @@ global using Blog.Application.Users.Queries.GetUserInfo;
 global using Blog.Application.Services;
 global using Microsoft.EntityFrameworkCore;
 global using Blog.Application.Users.Queries.CheckUser;
+global using Blog.WebApi.DTOs.AuthDTOs;
+global using Blog.Application.Articles.Queries.GetArticeGenres;
+global using Blog.Application.Articles.Queries.GetArticleListByGenre;
+global using Blog.Application.Articles.Queries.GetTopArticles;
+global using Blog.Application.Articles.Queries.SearchArticlesByTitle;
+global using Blog.Application.Users.Queries.GetStatistics;
+global using Blog.Application.Users.Queries.GetUsersByRole;
+global using Blog.Application.Users.Queries.SearchUser;
+global using Blog.Application.Users.Commands.ChangeRoleToAdmin;
+

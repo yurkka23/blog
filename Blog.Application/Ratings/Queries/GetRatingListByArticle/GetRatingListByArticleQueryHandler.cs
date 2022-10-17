@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Blog.Application.Ratings.Queries.GetRatingListByArticle;
 
-public class GetRatingListByArticleQueryHandler : IRequestHandler<GetRatingListByArticleQuery, RatingListVm>
+public class GetRatingListByArticleQueryHandler : IRequestHandler<GetRatingListByArticleQuery, RatingList>
 {
     private readonly IBlogDbContext _dbContext;
     private readonly IMapper _mapper;
@@ -18,7 +18,7 @@ public class GetRatingListByArticleQueryHandler : IRequestHandler<GetRatingListB
         _dbContext = dbContext;
         _mapper = mapper;
     }
-    public async Task<RatingListVm> Handle(GetRatingListByArticleQuery request, CancellationToken cancellationToken)
+    public async Task<RatingList> Handle(GetRatingListByArticleQuery request, CancellationToken cancellationToken)
     {
 
         var ratingQuery = await _dbContext.Ratings
@@ -31,6 +31,6 @@ public class GetRatingListByArticleQueryHandler : IRequestHandler<GetRatingListB
             throw new NotFoundException(nameof(Article), request.ArticleId);
         }
 
-        return new RatingListVm { Ratings = ratingQuery };
+        return new RatingList { Ratings = ratingQuery };
     }
 }

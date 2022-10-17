@@ -8,7 +8,7 @@ using AutoMapper;
 
 namespace Blog.Application.Users.Queries.GetUserInfo;
 
-public class GetUserInfoQueryHandle : IRequestHandler<GetUserInfoQuery, UserInfoVm>
+public class GetUserInfoQueryHandle : IRequestHandler<GetUserInfoQuery, UserInfo>
 {
     private readonly IBlogDbContext _dbContext;
     private readonly IMapper _mapper;
@@ -17,7 +17,7 @@ public class GetUserInfoQueryHandle : IRequestHandler<GetUserInfoQuery, UserInfo
         _dbContext = dbContext;
         _mapper = mapper;
     }
-    public async Task<UserInfoVm> Handle(GetUserInfoQuery request, CancellationToken cancellationToken)
+    public async Task<UserInfo> Handle(GetUserInfoQuery request, CancellationToken cancellationToken)
     {
         var userQuery = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == request.Id, cancellationToken);
 
@@ -26,6 +26,6 @@ public class GetUserInfoQueryHandle : IRequestHandler<GetUserInfoQuery, UserInfo
             throw new NotFoundException(nameof(User), request.Id);
         }
 
-        return _mapper.Map<UserInfoVm>(userQuery);
+        return _mapper.Map<UserInfo>(userQuery);
     }
 }

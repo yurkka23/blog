@@ -23,7 +23,7 @@ public class GetRatingListByArticleQueryHandlerTests
             ArticleId = BlogContextFactory.ArticleIdForUpdate
         }, CancellationToken.None);
         //Asset
-        result.ShouldBeOfType<RatingListVm>();
+        result.ShouldBeOfType<RatingList>();
         result.Ratings.Count.ShouldBe(2);
     }
     [Fact]

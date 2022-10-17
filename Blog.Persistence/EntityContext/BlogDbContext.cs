@@ -4,6 +4,7 @@ using Blog.Application.Interfaces;
 using Blog.Persistence.ModelsConfigurations;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Blog.Domain;
+using System.Reflection;
 
 namespace Blog.Persistence.EntityContext;
 
@@ -21,10 +22,11 @@ public class BlogDbContext :  IdentityDbContext<User, ApplicationRole, Guid>, IB
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
-        builder.ApplyConfiguration(new UserConfiguration());
-        builder.ApplyConfiguration(new ArticleConfiguration());
-        builder.ApplyConfiguration(new RatingConfiguration());
-        builder.ApplyConfiguration(new CommentConfiguration());
+        //builder.ApplyConfiguration(new UserConfiguration());
+        //builder.ApplyConfiguration(new ArticleConfiguration());
+        //builder.ApplyConfiguration(new RatingConfiguration());
+        //builder.ApplyConfiguration(new CommentConfiguration());
+        builder.ApplyConfigurationsFromAssembly( Assembly.GetExecutingAssembly() );
         base.OnModelCreating(builder);
     }
     

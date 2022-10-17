@@ -2,9 +2,8 @@
 
 public class CreateCommentDTO : IMapWith<CreateCommentCommand>
 {
-    [Required]
-    public string Message { get; set; } = null!;
-    [Required]
+    public string Message { get; set; } = string.Empty;
+   
     public Guid ArticleId { get; set; }
 
     public void Mapping(Profile profile)

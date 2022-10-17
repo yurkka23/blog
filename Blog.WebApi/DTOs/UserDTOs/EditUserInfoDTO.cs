@@ -2,14 +2,12 @@
 
 public class EditUserInfoDTO : IMapWith<EditUserInfoCommand>
 {
-    [Required]
-    public string UserName { get; set; }
-    [Required]
-    public string FirstName { get; set; }
-    [Required]
-    public string LastName { get; set; }
-    [Required]
-    public string AboutMe { get; set; }
+    public string UserName { get; set; } = string.Empty;
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string AboutMe { get; set; } = string.Empty;
+    public string ImageUserUrl { get; set; } = string.Empty;
+
 
     public void Mapping(Profile profile)
     {

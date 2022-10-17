@@ -29,7 +29,9 @@ public class UpdateArticleCommandHandler: IRequestHandler<UpdateArticleCommand>
 
         entity.Title = request.Title;
         entity.Content = request.Content;
-        entity.UpdatedTime = DateTime.Now;
+        entity.Genre = request.Genre;
+        entity.ArticleImageUrl = request.ArticleImageUrl;
+        entity.UpdatedTime = DateTime.UtcNow;
         entity.State = State.Waiting;
         entity.UpdatedBy = request.UserId;
 

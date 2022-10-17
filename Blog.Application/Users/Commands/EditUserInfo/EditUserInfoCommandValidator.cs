@@ -17,12 +17,13 @@ public class EditUserInfoCommandValidator : AbstractValidator<EditUserInfoComman
             .NotEmpty().WithMessage("LastName must not be empty")
             .MaximumLength(20).WithMessage("LastName must not be longer then 20");
 
-        RuleFor(user => user.UserName).NotEmpty()
+        RuleFor(user => user.UserName)
             .NotEmpty().WithMessage("UserName must not be empty")
             .MaximumLength(20).WithMessage("UserName must not be longer then 20");
 
         RuleFor(user => user.AboutMe)
-            .NotEmpty().WithMessage("AboutMe must not be empty")
-            .MaximumLength(20).WithMessage("AboutMe must not be longer then 600");
+            .MaximumLength(600).WithMessage("AboutMe must not be longer then 600");
+        RuleFor(user => user.ImageUserUrl)
+            .NotEmpty().WithMessage("ImageUserUrl must not be empty");
     }
 }

@@ -3,21 +3,21 @@ using System;
 using System.Collections.Generic;
 
 
-namespace Blog.Domain.Models
+namespace Blog.Domain.Models;
+
+public class Article : BaseEntity
 {
-    public class Article : BaseEntity
-    {
-        public string Title { get; set; } = null!;
-        public string Content { get; set; } = null!;
-        public State State { get; set; } = State.Waiting;
+    public string Title { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public State State { get; set; } = State.Waiting;
+    public string Genre { get; set; } = string.Empty;
+    public string ArticleImageUrl { get; set; } = string.Empty;
 
-        public Guid UserId { get; set; }
-        public User User { get; set; } = null!;
+    public Guid UserId { get; set; }
+    public User User { get; set; } 
 
-        public ICollection<Rating>? Ratings { get; set; } 
+    public ICollection<Rating> Ratings { get; set; } = new List<Rating>();
 
-        public ICollection<Comment>? Comments { get; set; }
+    public ICollection<Comment>? Comments { get; set; } = new List<Comment>();
 
-        public double? AverageRating => Ratings != null ? (Ratings.Count > 0 ? Ratings.Average(r => r.Score) : 0) : null;
-    }
 }

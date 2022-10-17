@@ -16,7 +16,6 @@ public class DeleteArticleCommandHandler : IRequestHandler<DeleteArticleCommand>
     }
     public async Task<Unit> Handle(DeleteArticleCommand request, CancellationToken cancellationToken)
     {
-        //var entity = await _dbContext.Articles.FindAsync(new object[] { request.Id }, cancellationToken);
          var entity = await _dbContext.Articles.FirstOrDefaultAsync(ent => ent.Id == request.Id, cancellationToken);
 
         if (entity == null)
@@ -28,7 +27,6 @@ public class DeleteArticleCommandHandler : IRequestHandler<DeleteArticleCommand>
             throw new NotRightsException(request.UserId);
         }
         
-
         _dbContext.Articles.Remove(entity);
         await _dbContext.SaveChangesAsync(cancellationToken);
         return Unit.Value;

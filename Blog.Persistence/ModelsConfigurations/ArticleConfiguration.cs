@@ -21,6 +21,10 @@ public class ArticleConfiguration : IEntityTypeConfiguration<Article>
             .IsRequired()
             .HasMaxLength(1000);
 
+        builder.Property(article => article.Genre)
+            .IsRequired()
+            .HasMaxLength(15);
+
         builder.HasMany<Comment>(article => article.Comments)
             .WithOne(comment => comment.Article)
             .HasForeignKey(comment => comment.ArticleId)

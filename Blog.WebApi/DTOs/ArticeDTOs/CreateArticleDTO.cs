@@ -2,10 +2,11 @@
 
 public class CreateArticleDTO : IMapWith<CreateArticleCommand>
 {
-    [Required]
-    public string Title { get; set; } = null!;
-    [Required]
-    public string Content { get; set; } = null!;
+   
+    public string Title { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public string Genre { get; set; } = string.Empty;
+    public string ArticleImageUrl { get; set; } = string.Empty;
 
     public void Mapping(Profile profile)
     {

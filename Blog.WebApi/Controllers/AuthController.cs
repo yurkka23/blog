@@ -1,27 +1,20 @@
-﻿using System.Linq;
-
-namespace Blog.WebApi.Controllers;
+﻿namespace Blog.WebApi.Controllers;
 
 [Route("auth/")]
 [ApiController]
 
 public class AuthController : BaseController
 {
-   
-    private readonly IConfiguration _configuration;
     private readonly UserManager<User> _userManager;
     private readonly SignInManager<User> _signInManager;
     private readonly IBlogDbContext _blogContext;
-    private readonly IMapper _mapper;
     private readonly IUserService _userService;
 
-    public AuthController(IConfiguration configuration, IUserService userService, IBlogDbContext blogContext, IMapper mapper,
-        SignInManager<User> signInManager, UserManager<User> userManager)
+    public AuthController(IUserService userService, IBlogDbContext blogContext,
+        SignInManager<User> signInManager, UserManager<User> userManager, IMediator mediator) : base(mediator) 
     {
-        _configuration = configuration;
         _userService = userService;
         _blogContext = blogContext;
-        _mapper = mapper;
         _signInManager = signInManager;
         _userManager = userManager;
     }
@@ -42,10 +35,10 @@ public class AuthController : BaseController
 
         if (existUser)
         {
-            return BadRequest("User already exists");
+            return BadRequest("User with such username already exists");
         }
 
-        User newUser = new User
+        var newUser = new User
         {
             UserName = request.UserName,
             FirstName = request.FirstName,
@@ -59,15 +52,16 @@ public class AuthController : BaseController
 
         if (result.Succeeded)
         {
-            await _signInManager.SignInAsync(newUser, false);//false - if we close browser, cookie delete 
+            await _signInManager.SignInAsync(newUser, false); 
             return Ok(newUser.Id);
         }
 
         return BadRequest(result.Errors);
     }
+
     [AllowAnonymous]
     [HttpPost("login/")]
-    public async Task<ActionResult<string>> Login([FromBody] UserLoginDTO request)
+    public async Task<ActionResult<AuthRefreshDTO>> Login([FromBody] UserLoginDTO request)
     {
         if (!ModelState.IsValid)
         {
@@ -83,7 +77,6 @@ public class AuthController : BaseController
         }
 
         var res = _signInManager.PasswordSignInAsync(request.UserName, request.Password,false,false);
-        var result = _signInManager.CanSignInAsync(user);
 
         if (!res.Result.Succeeded)
         {
@@ -91,53 +84,57 @@ public class AuthController : BaseController
         }
 
        
-        var token = _userService.CreateToken(user , _configuration);
+        var token = _userService.CreateToken(user);
        
         var refreshToken = _userService.GenerateRefreshToken();
         await _userService.SetRefreshToken(refreshToken, user, HttpContext, _blogContext, CancellationToken.None);
-        
-        return Ok(token);
+        var response = new AuthResponseDTO
+        {
+            JwtToken = token,
+            RefreshToken = refreshToken.Token,
+            User = new()
+            {
+                Id = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                AboutMe = user.AboutMe,
+                ImageUserUrl = user.ImageUserUrl,
+                Role = user.Role
+            }
+        };
+        return Ok(response);
     }
 
-    [Authorize]
-    [HttpGet("logout/")]
-    public async Task<IActionResult> Logout()//redo it!!!
-    {
-        await _signInManager.SignOutAsync();
-        return Ok();
-    }
-
-    [Authorize]
     [HttpPost("refresh-token")]
-    public async Task<ActionResult<string>> RefreshToken()
+    public async Task<ActionResult<AuthRefreshDTO>> RefreshToken([FromBody] AuthRequestDTO request)
     {
-        //var myid = ClaimTypes.NameIdentifier.ToString();
-        Guid UserId1 = Guid.Parse(HttpContext.User.FindFirst(ClaimTypes.NameIdentifier.ToString()).Value);
-
-    var user = await _blogContext.Users.FirstOrDefaultAsync(u => u.Id == UserId1);//with UserId don't find : null
+        var user = await _blogContext.Users.FirstOrDefaultAsync(u => u.Id == request.Id);
        
-
-        var refreshToken = Request.Cookies["refreshToken"];
         if(user == null)
         {
             return NotFound("Not found such user");
         }
 
-        if (!user.RefreshToken.Equals(refreshToken))
+        if (!user.RefreshToken.Equals(request.RefreshToken))
         {
-            return Unauthorized("Invalid Refresh Token.");
+            return BadRequest("Invalid Refresh Token.");
         }
-        if (user.TokenExpires < DateTime.Now)
+        if (user.TokenExpires < DateTime.UtcNow)
         {
-            return Unauthorized("Token expired.");
+            return BadRequest("Token expired.");
         }
 
-        string token = _userService.CreateToken(user, _configuration);
+        string token = _userService.CreateToken(user);
         var newRefreshToken = _userService.GenerateRefreshToken();
         
         await _userService.SetRefreshToken(newRefreshToken,user,HttpContext, _blogContext, CancellationToken.None);
 
-        return Ok(token);
+        var response = new AuthRefreshDTO
+        {
+            jwtToken = token,
+            refreshToken = newRefreshToken.Token
+        };
+        return Ok(response);
     }
 
 }

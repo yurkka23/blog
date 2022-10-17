@@ -9,6 +9,7 @@ public class User : IdentityUser<Guid>
     public string LastName { get; set; } = string.Empty;
     public string? AboutMe { get; set; }
     public Role Role { get; set; }
+    public string ImageUserUrl { get; set; } = string.Empty;
 
     //Auth
     public string RefreshToken { get; set; } = string.Empty;

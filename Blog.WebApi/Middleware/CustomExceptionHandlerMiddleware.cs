@@ -43,6 +43,10 @@ public class CustomExceptionHandlerMiddleware
             case NotRightsException:
                 code = HttpStatusCode.Forbidden;
                 break;
+            default:
+                code = HttpStatusCode.BadRequest;
+                result = JsonSerializer.Serialize(exception.Message);
+                break;
         }
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = (int)code;

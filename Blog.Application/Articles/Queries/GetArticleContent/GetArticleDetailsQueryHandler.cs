@@ -6,10 +6,11 @@ using Blog.Application.Common.Exceptions;
 using Blog.Domain.Models;
 using Blog.Domain.Enums;
 using AutoMapper;
+using Blog.Domain.Helpers;
 
 namespace Blog.Application.Articles.Queries.GetArticleContent;
 
-public class GetArticleDetailsQueryHandler : IRequestHandler<GetArticleContentQuery, ArticleContentVm>
+public class GetArticleDetailsQueryHandler : IRequestHandler<GetArticleContentQuery, ArticleContent>
 {
     private readonly IBlogDbContext _dbContext;
     private readonly IMapper _mapper;
@@ -18,14 +19,29 @@ public class GetArticleDetailsQueryHandler : IRequestHandler<GetArticleContentQu
         _dbContext = dbContext;
         _mapper = mapper;
     }
-    public async Task<ArticleContentVm> Handle(GetArticleContentQuery request , CancellationToken cancellationToken)
+    public async Task<ArticleContent> Handle(GetArticleContentQuery request , CancellationToken cancellationToken)
     {
-        var entity = await _dbContext.Articles.Include(a => a.Ratings).FirstOrDefaultAsync(article => article.Id == request.Id, cancellationToken);
+        var entity = await _dbContext.Articles
+                            .Include(a => a.Ratings)
+                            .AsNoTracking()
+                            .FirstOrDefaultAsync(article => article.Id == request.Id, cancellationToken);
 
         if (entity == null)
         {
             throw new NotFoundException(nameof(Article), request.Id);
         }
-        return _mapper.Map<ArticleContentVm>(entity);
+        
+
+        var result = _mapper.Map<ArticleContent>(entity);
+
+        var getAuthorName = await _dbContext.Users
+            .Where(user => user.Id == result.CreatedBy)
+            .ToListAsync(cancellationToken);
+
+        result.AverageRating = ArticleHelper.GetAverageRating(entity);
+        result.AuthorImageUrl = getAuthorName[0].ImageUserUrl;
+        result.AuthorFullName = getAuthorName[0].FirstName + ' ' + getAuthorName[0].LastName;
+
+        return result;
     }
 }

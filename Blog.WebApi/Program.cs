@@ -4,7 +4,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddApplication();
+builder.Services.AddApplication(builder.Configuration);
 builder.Services.AddPersistance(builder.Configuration);
 builder.Services.AddControllers();
 
@@ -50,11 +50,13 @@ builder.Services.AddAuthentication(options => {
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
+            ClockSkew = TimeSpan.Zero,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8
                 .GetBytes(builder.Configuration.GetSection("AppSettings:Token").Value)),
             ValidateIssuer = false,
             ValidateAudience = false,
+            ValidateLifetime = true
         };
     });
 
@@ -66,13 +68,6 @@ builder.Services.Configure<IdentityOptions>(options =>
     options.Password.RequireUppercase = false;
     options.Password.RequiredLength = 4;
     options.Password.RequiredUniqueChars = 0;
-});
-
-//Add cookie
-builder.Services.Configure<CookiePolicyOptions>(options =>
-{
-    options.CheckConsentNeeded = context => true;
-    options.MinimumSameSitePolicy = SameSiteMode.None;
 });
 
 builder.Services.AddHttpClient();
@@ -102,6 +97,8 @@ app.UseRouting();
 
 app.UseAuthorization();
 
+app.UseCustomExceptionHandler();
+
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();
@@ -109,6 +106,6 @@ app.UseEndpoints(endpoints =>
 
 app.MapControllers();
 
-app.UseCustomExceptionHandler();
+
 
 app.Run();
