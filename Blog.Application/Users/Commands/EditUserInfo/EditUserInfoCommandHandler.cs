@@ -3,15 +3,19 @@ using Microsoft.EntityFrameworkCore;
 using Blog.Application.Interfaces;
 using Blog.Application.Common.Exceptions;
 using Blog.Domain.Models;
+using Blog.Application.Caching;
+
 
 namespace Blog.Application.Users.Commands.EditUserInfo;
 
 public class EditUserInfoCommandHandler : IRequestHandler<EditUserInfoCommand>
 {
     private readonly IBlogDbContext _dbContext;
-    public EditUserInfoCommandHandler(IBlogDbContext dbContext)
+    private readonly ICacheService _cacheService;
+    public EditUserInfoCommandHandler(IBlogDbContext dbContext, ICacheService cacheService)
     {
         _dbContext = dbContext;
+        _cacheService = cacheService;
     }
     public async Task<Unit> Handle(EditUserInfoCommand request, CancellationToken cancellationToken)
     {
@@ -32,6 +36,11 @@ public class EditUserInfoCommandHandler : IRequestHandler<EditUserInfoCommand>
             }
         }
 
+        if(entity.UserName != request.UserName)
+        {
+            await _cacheService.DeleteAsync("UserListSearch");
+        }
+
         entity.UserName = request.UserName;
         entity.FirstName = request.FirstName;
         entity.LastName = request.LastName;
@@ -39,6 +48,7 @@ public class EditUserInfoCommandHandler : IRequestHandler<EditUserInfoCommand>
         entity.ImageUserUrl = request.ImageUserUrl;
       
         await _dbContext.SaveChangesAsync(cancellationToken);
+
         return Unit.Value;
     }
 }

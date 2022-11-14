@@ -6,6 +6,7 @@ using AutoMapper.QueryableExtensions;
 using Blog.Domain.Helpers;
 using Blog.Application.Articles.Queries.GetArticleList;
 using Blog.Application.Common.Exceptions;
+using Blog.Application.Caching;
 
 namespace Blog.Application.Articles.Queries.GetArticleListByGenre;
 
@@ -13,41 +14,36 @@ public class GetArticleListByGenreQueryHandler : IRequestHandler<GetArticleListB
 {
     private readonly IBlogDbContext _dbContext;
     private readonly IMapper _mapper;
-    public GetArticleListByGenreQueryHandler(IBlogDbContext dbContext, IMapper mapper)
+    private readonly ICacheService _cacheService;
+
+    public GetArticleListByGenreQueryHandler(IBlogDbContext dbContext, IMapper mapper, ICacheService cacheService)
     {
         _dbContext = dbContext;
         _mapper = mapper;
+        _cacheService = cacheService;
     }
     public async Task<ArticleList> Handle(GetArticleListByGenreQuery request, CancellationToken cancellationToken)
     {
+        var cachedEntity = await _cacheService.GetAsync<ArticleList>($"ArticleListByGenre {request.Genre}");
+
+        if (cachedEntity != default)
+        {
+            return cachedEntity;
+        }
+
         var articleQuery = await _dbContext.Articles
             .Include(a => a.Ratings)
+            .Include(a => a.User)
             .AsNoTracking()
             .Where(article => article.State == request.State && article.Genre == request.Genre.Trim())
             .OrderByDescending(article => article.CreatedTime)
+            .ProjectTo<ArticleLookupDto>(_mapper.ConfigurationProvider)
             .ToListAsync(cancellationToken);
 
-        var articesList = new List<ArticleLookupDto>();
+        var result = new ArticleList { Articles = articleQuery };
+        await _cacheService.CreateAsync($"ArticleListByGenre {request.Genre}", result);
 
-        if (articleQuery.Count > 0)
-        {
-            var index = 0;
-            foreach (var article in articleQuery)
-            {
-                var getAuthorName = await _dbContext.Users
-                .Where(user => user.Id == articleQuery[index].CreatedBy)
-                .ToListAsync(cancellationToken);
-
-                var temp = _mapper.Map<ArticleLookupDto>(article);
-                temp.AverageRating = ArticleHelper.GetAverageRating(article);
-                temp.AuthorFullName = getAuthorName[0].FirstName + ' ' + getAuthorName[0].LastName;
-                articesList.Add(temp);
-                index++;
-            }
-
-        }
-       
-        return new ArticleList { Articles = articesList };
+        return result;
         
     }
 }

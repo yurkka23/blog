@@ -29,20 +29,15 @@ public class GetArticlesByUserQueryHandle : IRequestHandler<GetArticlesByUserQue
 
         var articleQuery = await _dbContext.Articles
             .Include(a => a.Ratings)
+            .Include(a => a.User)
             .AsNoTracking()
             .Where(article => article.UserId == request.UserId)
             .OrderByDescending(article => article.CreatedTime)
+            .ProjectTo<ArticleByUserLookupDto>(_mapper.ConfigurationProvider)
             .ToListAsync(cancellationToken);
-
-        var articesList = new List<ArticleByUserLookupDto>();
-        foreach (var article in articleQuery)
-        {
-            var temp = _mapper.Map<ArticleByUserLookupDto>(article);
-            temp.AverageRating = ArticleHelper.GetAverageRating(article);
-            articesList.Add(temp);
-
-        }
-
-        return new ArticleListByUser { Articles = articesList };
+      
+        return new ArticleListByUser { Articles = articleQuery };
+       
     }
+    
 }
