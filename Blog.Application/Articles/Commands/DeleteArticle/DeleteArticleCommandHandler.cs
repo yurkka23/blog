@@ -8,7 +8,7 @@ using Blog.Application.Caching;
 
 namespace Blog.Application.Articles.Commands.DeleteArticle;
 
-public class DeleteArticleCommandHandler : IRequestHandler<DeleteArticleCommand>
+public class DeleteArticleCommandHandler : AsyncRequestHandler<DeleteArticleCommand>
 {
     private readonly IBlogDbContext _dbContext;
     private readonly ICacheService _cacheService;
@@ -18,7 +18,7 @@ public class DeleteArticleCommandHandler : IRequestHandler<DeleteArticleCommand>
         _dbContext = dbContext;
         _cacheService = cacheService;
     }
-    public async Task<Unit> Handle(DeleteArticleCommand request, CancellationToken cancellationToken)
+    protected override async Task Handle(DeleteArticleCommand request, CancellationToken cancellationToken)
     {
          var entity = await _dbContext.Articles.FirstOrDefaultAsync(ent => ent.Id == request.Id, cancellationToken);
 
@@ -34,11 +34,11 @@ public class DeleteArticleCommandHandler : IRequestHandler<DeleteArticleCommand>
         _dbContext.Articles.Remove(entity);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        await _cacheService.DeleteAsync($"ArticleListByGenre {entity.Genre}");
-        await _cacheService.DeleteAsync("ArticleListSearch");
-        await _cacheService.DeleteAsync($"Article {entity.Id}");
+        var t1 = _cacheService.DeleteAsync($"ArticleListByGenre {entity.Genre}");
+        var t2 = _cacheService.DeleteAsync("ArticleListSearch");
+        var t3 = _cacheService.DeleteAsync($"Article {entity.Id}");
 
-        return Unit.Value;
+        await Task.WhenAll(t1, t2, t3);
     }
 }
 

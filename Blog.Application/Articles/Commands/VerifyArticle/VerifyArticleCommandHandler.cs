@@ -8,7 +8,7 @@ using Blog.Application.Caching;
 
 namespace Blog.Application.Articles.Commands.VerifyArticle;
 
-public class VerifyArticleCommandHandler : IRequestHandler<VerifyArticleCommand>
+public class VerifyArticleCommandHandler : AsyncRequestHandler<VerifyArticleCommand>
 {
     private readonly IBlogDbContext _dbContext;
     private readonly ICacheService _cacheService;
@@ -17,7 +17,7 @@ public class VerifyArticleCommandHandler : IRequestHandler<VerifyArticleCommand>
         _dbContext = dbContext;
         _cacheService = cacheService;   
     }
-    public async Task<Unit> Handle(VerifyArticleCommand request, CancellationToken cancellationToken)
+    protected override async Task Handle(VerifyArticleCommand request, CancellationToken cancellationToken)
     {
         var entity = await _dbContext.Articles.FirstOrDefaultAsync(article => article.Id == request.Id, cancellationToken);
 
@@ -35,10 +35,11 @@ public class VerifyArticleCommandHandler : IRequestHandler<VerifyArticleCommand>
         
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        await _cacheService.DeleteAsync($"ArticleListByGenre {entity.Genre}");
-        await _cacheService.DeleteAsync("ArticleListSearch");
-        await _cacheService.DeleteAsync($"Article {entity.Id}");
+        var t1 = _cacheService.DeleteAsync($"ArticleListByGenre {entity.Genre}");
+        var t2 = _cacheService.DeleteAsync("ArticleListSearch");
+        var t3 = _cacheService.DeleteAsync($"Article {entity.Id}");
 
-        return Unit.Value;
+        await Task.WhenAll(t1, t2, t3);
+
     }
 }

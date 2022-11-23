@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Options;
 using MongoDB.Driver;
-using System.Linq.Expressions;
 using System.Text.Json;
 
 namespace Blog.Application.Caching;
@@ -53,9 +52,5 @@ public class CachingService : ICacheService
     {
         await _cacheCollection.DeleteManyAsync(x => x.Key.Contains(key));
     }
-    //public async Task DeleteAsync(Expression<Func<object, string>> predicate = null)
-    //{
-    //    await _cacheCollection.DeleteManyAsync(predicate);
-    //}
-
+    
 }

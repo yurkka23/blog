@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Blog.Application.Users.Commands.ChangeRoleToAdmin;
 
-public class ChangeRoleToAdminCommandHandler : IRequestHandler<ChangeRoleToAdminCommand>
+public class ChangeRoleToAdminCommandHandler : AsyncRequestHandler<ChangeRoleToAdminCommand>
 {
     private readonly IBlogDbContext _dbContext;
     private readonly ICacheService _cacheService;
@@ -17,7 +17,7 @@ public class ChangeRoleToAdminCommandHandler : IRequestHandler<ChangeRoleToAdmin
         _dbContext = dbContext;
         _cacheService = cacheService;
     }
-    public async Task<Unit> Handle(ChangeRoleToAdminCommand request, CancellationToken cancellationToken)
+    protected override async Task Handle(ChangeRoleToAdminCommand request, CancellationToken cancellationToken)
     {
         var entity = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == request.UserId, cancellationToken);
 
@@ -37,6 +37,5 @@ public class ChangeRoleToAdminCommandHandler : IRequestHandler<ChangeRoleToAdmin
 
         await _cacheService.DeleteAsync("UserListSearch");
 
-        return Unit.Value;
     }
 }

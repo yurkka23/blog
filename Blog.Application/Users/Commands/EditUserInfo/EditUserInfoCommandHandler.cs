@@ -8,7 +8,7 @@ using Blog.Application.Caching;
 
 namespace Blog.Application.Users.Commands.EditUserInfo;
 
-public class EditUserInfoCommandHandler : IRequestHandler<EditUserInfoCommand>
+public class EditUserInfoCommandHandler : AsyncRequestHandler<EditUserInfoCommand>
 {
     private readonly IBlogDbContext _dbContext;
     private readonly ICacheService _cacheService;
@@ -17,7 +17,7 @@ public class EditUserInfoCommandHandler : IRequestHandler<EditUserInfoCommand>
         _dbContext = dbContext;
         _cacheService = cacheService;
     }
-    public async Task<Unit> Handle(EditUserInfoCommand request, CancellationToken cancellationToken)
+    protected override async Task Handle(EditUserInfoCommand request, CancellationToken cancellationToken)
     {
         var entity = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == request.Id, cancellationToken);
         
@@ -49,6 +49,5 @@ public class EditUserInfoCommandHandler : IRequestHandler<EditUserInfoCommand>
       
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return Unit.Value;
     }
 }
