@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Blog.Application.Common.Mappings;
 using Blog.Domain.Enums;
+using Blog.Domain.Helpers;
 using Blog.Domain.Models;
 
 namespace Blog.Application.Articles.Queries.GetArticlesByUser;
@@ -17,6 +18,7 @@ public class ArticleByUserLookupDto : IMapWith<Article>
     public DateTime CreatedTime { get; set; }
     public void Mapping(Profile profile)
     {
-        profile.CreateMap<Article, ArticleByUserLookupDto>();
+        profile.CreateMap<Article, ArticleByUserLookupDto>()
+            .ForMember(art => art.AverageRating, art => art.MapFrom(map => ArticleHelper.GetAverageRating(map)));
     }
 }

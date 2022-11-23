@@ -1,3 +1,4 @@
+
 var builder = WebApplication.CreateBuilder(args);
 
 //add services to the cointainer
@@ -6,6 +7,9 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddApplication(builder.Configuration);
 builder.Services.AddPersistance(builder.Configuration);
+builder.Services.Configure<CacheStoreDatabaseSettings>(
+    builder.Configuration.GetSection("CachingStoreDatabase"));
+
 builder.Services.AddControllers();
 
 builder.Services.AddAutoMapper(config =>

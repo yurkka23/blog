@@ -5,7 +5,7 @@
 public class ArticleController : BaseController
 {
     private readonly IMapper _mapper;
-
+       
     public ArticleController(IMapper mapper, IMediator mediator): base(mediator) 
     {
         _mapper = mapper;
@@ -66,11 +66,12 @@ public class ArticleController : BaseController
     }
 
     [HttpGet("get-article-content-by-id")]
-    public async Task<ActionResult<ArticleContent>> GetArticleContentById(Guid id, CancellationToken cancellationToken)
+    public async Task<ActionResult<ArticleContent>> GetArticleContentById(Guid id, Guid CurrentUserId, CancellationToken cancellationToken)
     {
         var query = new GetArticleContentQuery
         {
-            Id = id
+            Id = id,
+            UserId = CurrentUserId
         };
         var vm = await Mediator.Send(query, cancellationToken);
     

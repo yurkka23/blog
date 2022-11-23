@@ -6,14 +6,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Blog.Application.Comments.Commands.UpdateComment;
 
-public class UpdateCommentCommandHandler : IRequestHandler<UpdateCommentCommand>
+public class UpdateCommentCommandHandler : AsyncRequestHandler<UpdateCommentCommand>
 {
     private readonly IBlogDbContext _dbContext;
     public UpdateCommentCommandHandler(IBlogDbContext dbContext)
     {
         _dbContext = dbContext;
     }
-    public async Task<Unit> Handle(UpdateCommentCommand request, CancellationToken cancellationToken)
+    protected override async Task<Unit> Handle(UpdateCommentCommand request, CancellationToken cancellationToken)
     {
         var entity = await _dbContext.Comments.FirstOrDefaultAsync(comment => comment.Id == request.Id, cancellationToken);
 
@@ -29,6 +29,5 @@ public class UpdateCommentCommandHandler : IRequestHandler<UpdateCommentCommand>
         entity.Message = request.Message;
         
         await _dbContext.SaveChangesAsync(cancellationToken);
-        return Unit.Value;
     }
 }

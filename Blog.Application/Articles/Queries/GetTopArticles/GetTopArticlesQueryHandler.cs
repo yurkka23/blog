@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Blog.Application.Articles.Queries.GetArticleList;
 using Blog.Application.Interfaces;
 using Blog.Domain.Helpers;
@@ -20,33 +21,14 @@ public class GetTopArticlesQueryHandler : IRequestHandler<GetTopArticlesQuery, A
     {
         var articleQuery = await _dbContext.Articles
             .Include(a => a.Ratings)
+            .Include(a => a.User)
             .AsNoTracking()
             .Where(article => article.State == request.State)
+            .ProjectTo<ArticleLookupDto>(_mapper.ConfigurationProvider)
             .ToListAsync(cancellationToken);
 
 
-        var articesList = new List<ArticleLookupDto>();
-
-        if (articleQuery.Count > 0)
-        {
-            var index = 0;
-            foreach (var article in articleQuery)
-            {
-                var getAuthorName = await _dbContext.Users
-                .Where(user => user.Id == articleQuery[index].CreatedBy)
-                .ToListAsync(cancellationToken);
-
-                var temp = _mapper.Map<ArticleLookupDto>(article);
-                temp.AverageRating = ArticleHelper.GetAverageRating(article);
-                temp.AuthorFullName = getAuthorName[0].FirstName + ' ' + getAuthorName[0].LastName;
-                articesList.Add(temp);
-                index++;
-            }
-            articesList = articesList.OrderByDescending(art => art.AverageRating).Take(4).ToList();
-
-        }
-
-
+        var articesList = articleQuery.OrderByDescending(art => art.AverageRating).Take(4).ToList();
 
         return new ArticleList { Articles = articesList };
                

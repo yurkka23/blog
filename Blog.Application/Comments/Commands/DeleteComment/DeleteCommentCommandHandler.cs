@@ -7,14 +7,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Blog.Application.Comments.Commands.DeleteComment;
 
-public class DeleteCommentCommandHandler : IRequestHandler<DeleteCommentCommand>
+public class DeleteCommentCommandHandler : AsyncRequestHandler<DeleteCommentCommand>
 {
     private readonly IBlogDbContext _dbContext;
     public DeleteCommentCommandHandler( IBlogDbContext dbContext)
     {
         _dbContext = dbContext;
     }
-    public async Task<Unit> Handle(DeleteCommentCommand request, CancellationToken cancellationToken)
+    protected override async Task Handle(DeleteCommentCommand request, CancellationToken cancellationToken)
     {
         var entity = await _dbContext.Comments.FirstOrDefaultAsync(ent => ent.Id == request.Id, cancellationToken);
 
@@ -30,6 +30,5 @@ public class DeleteCommentCommandHandler : IRequestHandler<DeleteCommentCommand>
         _dbContext.Comments.Remove(entity);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return Unit.Value;
     }
 }

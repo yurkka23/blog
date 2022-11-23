@@ -44,7 +44,7 @@ public class CommentController : BaseController
 
     [HttpDelete("delete-comment")]
     public async Task<IActionResult> DeleteComment(int id, CancellationToken cancellationToken)
-    {
+    { 
 
         var commentId = await Mediator.Send(new DeleteCommentCommand
         {
