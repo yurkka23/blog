@@ -14,6 +14,11 @@ public class BlogDbContext :  IdentityDbContext<User, ApplicationRole, Guid>, IB
     public DbSet<Article> Articles { get; set; }
     public DbSet<Rating> Ratings { get; set; }
     public DbSet<Comment> Comments { get; set; }
+    public DbSet<UserSubscription> UserSubscriptions { get; set; }
+    public DbSet<Message> Messages { get; set; }
+    public DbSet<Group> Groups { get; set; }
+    public DbSet<Connection> Connections { get; set; }
+
     public BlogDbContext(DbContextOptions<BlogDbContext> options): base(options) 
     {
         Database.EnsureCreated();
@@ -22,10 +27,6 @@ public class BlogDbContext :  IdentityDbContext<User, ApplicationRole, Guid>, IB
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
-        //builder.ApplyConfiguration(new UserConfiguration());
-        //builder.ApplyConfiguration(new ArticleConfiguration());
-        //builder.ApplyConfiguration(new RatingConfiguration());
-        //builder.ApplyConfiguration(new CommentConfiguration());
         builder.ApplyConfigurationsFromAssembly( Assembly.GetExecutingAssembly() );
         base.OnModelCreating(builder);
     }

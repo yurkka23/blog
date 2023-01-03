@@ -13,7 +13,7 @@ public class UpdateCommentCommandHandler : AsyncRequestHandler<UpdateCommentComm
     {
         _dbContext = dbContext;
     }
-    protected override async Task<Unit> Handle(UpdateCommentCommand request, CancellationToken cancellationToken)
+    protected override async Task Handle(UpdateCommentCommand request, CancellationToken cancellationToken)
     {
         var entity = await _dbContext.Comments.FirstOrDefaultAsync(comment => comment.Id == request.Id, cancellationToken);
 

@@ -13,6 +13,7 @@ public class ArticleContent : IMapWith<Article>
     public string Content { get; set; } = string.Empty;
     public double AverageRating { get; set; }
     public string Genre { get; set; } = string.Empty;
+    public Guid AuthorId { get; set; }
     public string ArticleImageUrl { get; set; } = string.Empty;
     public string AuthorImageUrl { get; set; } = string.Empty;
     public string AuthorFullName { get; set; } = string.Empty;

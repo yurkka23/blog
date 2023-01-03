@@ -20,5 +20,9 @@ public class User : IdentityUser<Guid>
     public ICollection<Article>? Articles { get; set; }
     public ICollection<Rating>? Ratings { get; set; }
     public ICollection<Comment>? Comments { get; set; }
+    public ICollection<UserSubscription>? UserSubscriptions { get; set; }
+    public ICollection<Message>? MessagesSent { get; set; }
+    public ICollection<Message>? MessagesRecieved { get; set; }
+
 
 }
