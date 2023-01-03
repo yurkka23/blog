@@ -4,7 +4,6 @@ using Blog.Domain.Models;
 using MediatR;
 using Blog.Domain;
 using Blog.Application.Interfaces;
-using Blog.Application.Caching;
 
 namespace Blog.Application.Articles.Commands.CreateArticle;
 
@@ -12,11 +11,9 @@ namespace Blog.Application.Articles.Commands.CreateArticle;
 public class CreateArticleCommandHandler : IRequestHandler<CreateArticleCommand, Guid>//1 request, 2 response
 {
     private readonly IBlogDbContext _dbContext;
-    private readonly ICacheService _cacheService;
-    public CreateArticleCommandHandler(IBlogDbContext dbContext, ICacheService cacheService)
+    public CreateArticleCommandHandler(IBlogDbContext dbContext)
     {
         _dbContext = dbContext;
-        _cacheService = cacheService;
     }
     public async Task<Guid> Handle(CreateArticleCommand request, CancellationToken cancellationToken)
     {
@@ -36,9 +33,6 @@ public class CreateArticleCommandHandler : IRequestHandler<CreateArticleCommand,
         };
         await _dbContext.Articles.AddAsync(article, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
-
-        await _cacheService.DeleteAsync($"ArticleListByGenre {request.Genre}");
-        await _cacheService.DeleteAsync("ArticleListSearch");
 
         return article.Id;
     }

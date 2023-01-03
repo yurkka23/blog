@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Blog.Application.Articles.Queries.GetArticleList;
-using Blog.Application.Caching;
 using Blog.Application.Interfaces;
 using Blog.Domain.Helpers;
 using MediatR;
@@ -13,22 +12,15 @@ public class SearchArticlesByTitleQueryHandler : IRequestHandler<SearchArticlesB
 {
     private readonly IBlogDbContext _dbContext;
     private readonly IMapper _mapper;
-    private readonly ICacheService _cacheService;
 
-    public SearchArticlesByTitleQueryHandler(IBlogDbContext dbContext, IMapper mapper, ICacheService cacheService)
+    public SearchArticlesByTitleQueryHandler(IBlogDbContext dbContext, IMapper mapper)
     {
         _dbContext = dbContext;
         _mapper = mapper;
-        _cacheService = cacheService;
     }
     public async Task<ArticleList> Handle(SearchArticlesByTitleQuery request, CancellationToken cancellationToken)
     {
-        var cachedEntity = await _cacheService.GetAsync<ArticleList>($"ArticleListSearch {request.PartTitle}");
-
-        if (cachedEntity != default)
-        {
-            return cachedEntity;
-        }
+       
 
         var articleQuery = await _dbContext.Articles
             .Include(a => a.Ratings)
@@ -41,8 +33,6 @@ public class SearchArticlesByTitleQueryHandler : IRequestHandler<SearchArticlesB
             .ToListAsync(cancellationToken);
          
         var result = new ArticleList { Articles = articleQuery };
-
-        await _cacheService.CreateAsync($"ArticleListSearch {request.PartTitle}", result);
 
         return result;
     }

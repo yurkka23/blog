@@ -1,7 +1,6 @@
 ﻿using Blog.Domain.Models;
 using MediatR;
 using Blog.Application.Interfaces;
-using Blog.Application.Caching;
 using Microsoft.EntityFrameworkCore;
 using Blog.Application.Common.Exceptions;
 

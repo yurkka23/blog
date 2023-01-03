@@ -4,7 +4,6 @@ using Blog.Application.Interfaces;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Blog.Domain.Helpers;
-using Blog.Application.Caching;
 
 namespace Blog.Application.Articles.Queries.GetArticleList;
 

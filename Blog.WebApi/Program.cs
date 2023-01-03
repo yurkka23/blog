@@ -10,8 +10,6 @@ builder.Services.AddSignalR();
 builder.Services.AddSingleton<PresenceTracker>();
 builder.Services.AddApplication(builder.Configuration);
 builder.Services.AddPersistance(builder.Configuration);
-builder.Services.Configure<CacheStoreDatabaseSettings>(
-    builder.Configuration.GetSection("CachingStoreDatabase"));
 
 builder.Services.AddControllers();
 

@@ -5,7 +5,6 @@ using Blog.Application.Common.Exceptions;
 using Blog.Domain.Models;
 using AutoMapper;
 using Blog.Domain.Helpers;
-using Blog.Application.Caching;
 
 namespace Blog.Application.Articles.Queries.GetArticleContent;
 
@@ -13,21 +12,13 @@ public class GetArticleDetailsQueryHandler : IRequestHandler<GetArticleContentQu
 {
     private readonly IBlogDbContext _dbContext;
     private readonly IMapper _mapper;
-    private readonly ICacheService _cacheService;
-    public GetArticleDetailsQueryHandler(IBlogDbContext dbContext, IMapper mapper, ICacheService cacheService)
+    public GetArticleDetailsQueryHandler(IBlogDbContext dbContext, IMapper mapper)
     {
         _dbContext = dbContext;
         _mapper = mapper;
-        _cacheService = cacheService;
     }
     public async Task<ArticleContent> Handle(GetArticleContentQuery request , CancellationToken cancellationToken)
     {
-        var cachedEntity = await _cacheService.GetAsync<ArticleContent>($"Article {request.Id}");
-
-        if (cachedEntity != default)
-        {
-            return cachedEntity;
-        }
        
         var entity = await _dbContext.Articles
                        .Include(art => art.Ratings)
@@ -50,8 +41,6 @@ public class GetArticleDetailsQueryHandler : IRequestHandler<GetArticleContentQu
         result.AuthorFullName = getAuthorName[0].FirstName + ' ' + getAuthorName[0].LastName;
         result.IsRatedByCurrentUser = entity.Ratings.Any(u => u.UserId == request.UserId);
         result.AuthorId = result.CreatedBy;
-
-        await _cacheService.CreateAsync($"Article {request.Id}", result);
 
         return result;
     }

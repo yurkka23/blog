@@ -9,16 +9,14 @@ public class AuthController : BaseController
     private readonly SignInManager<User> _signInManager;
     private readonly IBlogDbContext _blogContext;
     private readonly IUserService _userService;
-    private readonly ICacheService _cacheService;
 
     public AuthController(IUserService userService, IBlogDbContext blogContext,
-        SignInManager<User> signInManager, UserManager<User> userManager, IMediator mediator, ICacheService cacheService) : base(mediator)
+        SignInManager<User> signInManager, UserManager<User> userManager, IMediator mediator) : base(mediator)
     {
         _userService = userService;
         _blogContext = blogContext;
         _signInManager = signInManager;
         _userManager = userManager;
-        _cacheService = cacheService;   
     }
     [AllowAnonymous]
     [HttpPost("register")]
@@ -55,7 +53,6 @@ public class AuthController : BaseController
         if (result.Succeeded)
         {
             await _signInManager.SignInAsync(newUser, false);
-            await _cacheService.DeleteAsync("UserListSearch");
             return Ok(newUser.Id);
         }
 

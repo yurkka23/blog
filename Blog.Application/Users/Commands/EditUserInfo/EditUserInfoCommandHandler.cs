@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Blog.Application.Interfaces;
 using Blog.Application.Common.Exceptions;
 using Blog.Domain.Models;
-using Blog.Application.Caching;
 
 
 namespace Blog.Application.Users.Commands.EditUserInfo;
@@ -11,11 +10,9 @@ namespace Blog.Application.Users.Commands.EditUserInfo;
 public class EditUserInfoCommandHandler : AsyncRequestHandler<EditUserInfoCommand>
 {
     private readonly IBlogDbContext _dbContext;
-    private readonly ICacheService _cacheService;
-    public EditUserInfoCommandHandler(IBlogDbContext dbContext, ICacheService cacheService)
+    public EditUserInfoCommandHandler(IBlogDbContext dbContext)
     {
         _dbContext = dbContext;
-        _cacheService = cacheService;
     }
     protected override async Task Handle(EditUserInfoCommand request, CancellationToken cancellationToken)
     {
@@ -34,11 +31,6 @@ public class EditUserInfoCommandHandler : AsyncRequestHandler<EditUserInfoComman
             {
                 throw new Exception("User with uch username already exists");
             }
-        }
-
-        if(entity.UserName != request.UserName)
-        {
-            await _cacheService.DeleteAsync("UserListSearch");
         }
 
         entity.UserName = request.UserName;

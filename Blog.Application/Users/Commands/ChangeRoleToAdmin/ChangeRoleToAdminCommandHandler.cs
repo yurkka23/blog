@@ -1,5 +1,4 @@
-﻿using Blog.Application.Caching;
-using Blog.Application.Common.Exceptions;
+﻿using Blog.Application.Common.Exceptions;
 using Blog.Application.Interfaces;
 using Blog.Domain.Enums;
 using Blog.Domain.Models;
@@ -11,11 +10,9 @@ namespace Blog.Application.Users.Commands.ChangeRoleToAdmin;
 public class ChangeRoleToAdminCommandHandler : AsyncRequestHandler<ChangeRoleToAdminCommand>
 {
     private readonly IBlogDbContext _dbContext;
-    private readonly ICacheService _cacheService;
-    public ChangeRoleToAdminCommandHandler(IBlogDbContext dbContext, ICacheService cacheService)
+    public ChangeRoleToAdminCommandHandler(IBlogDbContext dbContext)
     {
         _dbContext = dbContext;
-        _cacheService = cacheService;
     }
     protected override async Task Handle(ChangeRoleToAdminCommand request, CancellationToken cancellationToken)
     {
@@ -35,7 +32,6 @@ public class ChangeRoleToAdminCommandHandler : AsyncRequestHandler<ChangeRoleToA
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        await _cacheService.DeleteAsync("UserListSearch");
 
     }
 }
