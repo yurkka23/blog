@@ -9,6 +9,11 @@ public interface IBlogDbContext
     DbSet<User> Users { get; set; }
     DbSet<Rating> Ratings { get; set; }
     DbSet<Comment> Comments { get; set; }
+    DbSet<UserSubscription> UserSubscriptions { get; set; }
+    DbSet<Message> Messages { get; set; }
+    DbSet<Group> Groups { get; set; }
+    DbSet<Connection> Connections { get; set; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
+   
 }

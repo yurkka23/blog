@@ -49,6 +49,7 @@ public class GetArticleDetailsQueryHandler : IRequestHandler<GetArticleContentQu
         result.AuthorImageUrl = getAuthorName[0].ImageUserUrl;
         result.AuthorFullName = getAuthorName[0].FirstName + ' ' + getAuthorName[0].LastName;
         result.IsRatedByCurrentUser = entity.Ratings.Any(u => u.UserId == request.UserId);
+        result.AuthorId = result.CreatedBy;
 
         await _cacheService.CreateAsync($"Article {request.Id}", result);
 

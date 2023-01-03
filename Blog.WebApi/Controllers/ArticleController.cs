@@ -91,7 +91,20 @@ public class ArticleController : BaseController
         return Ok(vm);
     }
 
-  
+    [HttpGet("get-another-user-articles")]
+    [Authorize]
+    public async Task<ActionResult<ArticleList>> GetAnotherUserArticles(Guid Id, CancellationToken cancellationToken)
+    {
+        var query = new GetArticlesByUserQuery
+        {
+            UserId = Id
+        };
+        var vm = await Mediator.Send(query, cancellationToken);
+
+        return Ok(vm);
+    }
+
+
     [HttpPost("create-article")]
     [Authorize]
     public async Task<ActionResult<Guid>> CreateArticle([FromBody] CreateArticleDTO createArticleDto,CancellationToken cancellationToken)

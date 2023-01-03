@@ -10,6 +10,10 @@ public class AssemblyMappingProfile : Profile
 
     private void ApplyMappingAssenbly(Assembly assembly)
     {
+        CreateMap<DateTime, DateTime>().ConvertUsing(d => DateTime.SpecifyKind(d, DateTimeKind.Utc));
+        CreateMap<DateTime?, DateTime?>().ConvertUsing(d => d.HasValue ?
+            DateTime.SpecifyKind(d.Value, DateTimeKind.Utc) : null);
+
         var types = assembly.GetExportedTypes()
             .Where(type => type.GetInterfaces()
             .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IMapWith<>)))
