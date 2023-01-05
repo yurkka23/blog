@@ -108,6 +108,57 @@ public class AuthController : BaseController
         return Ok(response);
     }
 
+    [AllowAnonymous]
+    [HttpPost("login-with-facebook/")]
+    public async Task<ActionResult<AuthRefreshDTO>> LoginWithFacebook([FromBody] FacebookLoginDTO request)
+    {
+        string UserNameDTO = request.Email?.Split('@')[0] ?? request.Id;
+        var user = await _blogContext.Users.FirstOrDefaultAsync(u => u.UserName == UserNameDTO);
+
+        if (user == null)
+        {
+            user = new User
+            {
+                UserName = UserNameDTO,
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                ImageUserUrl = request.AvatarUrl,
+                AboutMe = null,
+                Role = Role.User
+            };
+
+            var result = await _userManager.CreateAsync(user);
+
+
+            if (result.Succeeded)
+            {
+                await _cacheService.DeleteAsync("UserListSearch");
+            }
+        }
+
+        await _signInManager.SignInAsync(user, false);
+
+        var token = _userService.CreateToken(user);
+
+        var refreshToken = _userService.GenerateRefreshToken();
+        await _userService.SetRefreshToken(refreshToken, user, HttpContext, _blogContext, CancellationToken.None);
+        var response = new AuthResponseDTO
+        {
+            JwtToken = token,
+            RefreshToken = refreshToken.Token,
+            User = new()
+            {
+                Id = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                AboutMe = user.AboutMe,
+                ImageUserUrl = user.ImageUserUrl,
+                Role = user.Role
+            }
+        };
+        return Ok(response);
+    }
+
     [HttpPost("refresh-token")]
     public async Task<ActionResult<AuthRefreshDTO>> RefreshToken([FromBody] AuthRequestDTO request)
     {
