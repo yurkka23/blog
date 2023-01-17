@@ -4,6 +4,7 @@ using FluentValidation;
 namespace Blog.Application.Ratings.Queries.GetRatingListByArticle;
 public class GetRatingListByArticleQueryValidator : AbstractValidator<GetRatingListByArticleQuery>
 {
+
     public GetRatingListByArticleQueryValidator()
     {
         RuleFor(c => c.ArticleId)

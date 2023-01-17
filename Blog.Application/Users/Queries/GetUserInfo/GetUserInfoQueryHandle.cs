@@ -1,25 +1,35 @@
 ﻿using System;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Blog.Application.Interfaces;
 using Blog.Application.Common.Exceptions;
 using Blog.Domain.Models;
 using AutoMapper;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
+using Blog.Application.Settings;
 
 namespace Blog.Application.Users.Queries.GetUserInfo;
 
 public class GetUserInfoQueryHandle : IRequestHandler<GetUserInfoQuery, UserInfo>
 {
-    private readonly IBlogDbContext _dbContext;
     private readonly IMapper _mapper;
-    public GetUserInfoQueryHandle(IBlogDbContext dbContext, IMapper mapper)
+    private readonly IMongoCollection<User> _userCollection;
+
+    public GetUserInfoQueryHandle(IOptions<MongoUserDBSettings> userStoreDatabaseSettings, IMapper mapper)
     {
-        _dbContext = dbContext;
         _mapper = mapper;
+        var mongoClient = new MongoClient(
+           userStoreDatabaseSettings.Value.ConnectionString);
+
+        var mongoDatabase = mongoClient.GetDatabase(
+            userStoreDatabaseSettings.Value.DatabaseName);
+
+        _userCollection = mongoDatabase.GetCollection<User>(
+            userStoreDatabaseSettings.Value.CollectionName);
     }
     public async Task<UserInfo> Handle(GetUserInfoQuery request, CancellationToken cancellationToken)
     {
-        var userQuery = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == request.Id, cancellationToken);
+        var userQuery = (await _userCollection.FindAsync(x => x.Id == request.Id, null, cancellationToken)).FirstOrDefault();
 
         if (userQuery == null)
         {

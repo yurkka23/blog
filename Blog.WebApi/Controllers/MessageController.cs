@@ -23,7 +23,7 @@ public class MessageController : BaseController
     {
         var command = _mapper.Map<CreateMessageCommand>(request);
         command.SenderId = UserId;
-        var messageId  = await Mediator.Send(command, cancellationToken);
+        var messageId = await Mediator.Send(command, cancellationToken);
 
         return Ok(messageId);
     }

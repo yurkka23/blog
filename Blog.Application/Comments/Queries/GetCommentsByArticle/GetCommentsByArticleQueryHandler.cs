@@ -1,56 +1,58 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Blog.Application.Interfaces;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Blog.Application.Common.Exceptions;
 using Blog.Domain.Models;
+using Blog.Application.Settings;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
+using System.Linq;
 
 namespace Blog.Application.Comments.Queries.GetCommentsByArticle;
 
 public class GetCommentsByArticleQueryHandler : IRequestHandler<GetCommentsByArticleQuery, CommentList>
 {
-    private readonly IBlogDbContext _dbContext;
+    private readonly IMongoCollection<Comment> _entitiesCollection;
     private readonly IMapper _mapper;
-    public GetCommentsByArticleQueryHandler(IBlogDbContext dbContext, IMapper mapper)
+    private readonly IMongoCollection<User> _userCollection;
+
+    public GetCommentsByArticleQueryHandler(IOptions<MongoEntitiesDBSettings> entitiesStoreDatabaseSettings, IMapper mapper, IOptions<MongoUserDBSettings> userStoreDatabaseSettings)
     {
-        _dbContext = dbContext;
+        var mongoClient = new MongoClient(
+           entitiesStoreDatabaseSettings.Value.ConnectionString);
+
+        var mongoDatabase = mongoClient.GetDatabase(
+            entitiesStoreDatabaseSettings.Value.DatabaseName);
+
+        _entitiesCollection = mongoDatabase.GetCollection<Comment>(
+            entitiesStoreDatabaseSettings.Value.CollectionName);
+
         _mapper = mapper;
+
+        var mongoClient1 = new MongoClient(
+          userStoreDatabaseSettings.Value.ConnectionString);
+
+        var mongoDatabase1 = mongoClient1.GetDatabase(
+            userStoreDatabaseSettings.Value.DatabaseName);
+
+        _userCollection = mongoDatabase1.GetCollection<User>(
+            userStoreDatabaseSettings.Value.CollectionName);
     }
     public async Task<CommentList> Handle(GetCommentsByArticleQuery request, CancellationToken cancellationToken)
     {
-        if (request.ArticleId == Guid.Empty)
-        {
-            throw new NotFoundException(nameof(Article), request.ArticleId);
-        }
-        var commentQuery = await _dbContext.Comments
-            .Where(comment => comment.ArticleId == request.ArticleId)
-            .OrderByDescending(comment=> comment.Id)
-            .ToListAsync(cancellationToken);
+        var comments = (await _entitiesCollection
+           .FindAsync(Builders<Comment>.Filter.Eq("_t", "Comment") & Builders<Comment>.Filter.Eq("ArticleId", request.ArticleId),null,cancellationToken))
+           .ToEnumerable()
+           .OrderByDescending(c => c.CreatedTime)
+           .Select(com => new CommentLookupDto
+           {
+               Id = com.EntityId,
+               Message = com.Message,
+               AuthorUserName = _userCollection.Find(user => user.Id == com.UserId).FirstOrDefault().UserName,
+               AuthorImgUrl = _userCollection.Find(user => user.Id == com.UserId).FirstOrDefault().ImageUserUrl
+           }).ToList();
 
-        var commetnsList = new List<CommentLookupDto>();
-
-        if (commentQuery.Count > 0)
-        {
-            var index = 0;
-            foreach (var comment in commentQuery)
-            {
-                var getAuthorName = await _dbContext.Users
-                .Where(user => user.Id == commentQuery[index].UserId)
-                .ToListAsync(cancellationToken);
-
-                var temp = _mapper.Map<CommentLookupDto>(comment);
-                temp.AuthorImgUrl = getAuthorName[0].ImageUserUrl;
-                temp.AuthorUserName = getAuthorName[0].UserName;
-                commetnsList.Add(temp);
-                index++;
-            }
-
-
-
-        }
-
-
-        return new CommentList { Comments = commetnsList };
+        return new CommentList { Comments = comments };
     }
 }

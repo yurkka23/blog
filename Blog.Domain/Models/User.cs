@@ -1,10 +1,14 @@
-﻿using Blog.Domain.Enums;
-using Microsoft.AspNetCore.Identity;
+﻿using AspNetCore.Identity.MongoDbCore.Models;
+using Blog.Domain.Enums;
+using MongoDbGenericRepository.Attributes;
+
 
 namespace Blog.Domain.Models;
 
-public class User : IdentityUser<Guid>
+[CollectionName("UserBlogStore")]
+public class User : MongoIdentityUser<Guid>
 {
+
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public string? AboutMe { get; set; }
@@ -17,12 +21,12 @@ public class User : IdentityUser<Guid>
     public DateTime? TokenExpires { get; set; }
 
     //Relations
-    public ICollection<Article>? Articles { get; set; }
-    public ICollection<Rating>? Ratings { get; set; }
-    public ICollection<Comment>? Comments { get; set; }
-    public ICollection<UserSubscription>? UserSubscriptions { get; set; }
-    public ICollection<Message>? MessagesSent { get; set; }
-    public ICollection<Message>? MessagesRecieved { get; set; }
+    //public ICollection<Article>? Articles { get; set; }
+    //public ICollection<Rating>? Ratings { get; set; }
+    //public ICollection<Comment>? Comments { get; set; }
+    //public ICollection<UserSubscription>? UserSubscriptions { get; set; }
+    //public ICollection<Message>? MessagesSent { get; set; }
+    //public ICollection<Message>? MessagesRecieved { get; set; }
 
 
 }

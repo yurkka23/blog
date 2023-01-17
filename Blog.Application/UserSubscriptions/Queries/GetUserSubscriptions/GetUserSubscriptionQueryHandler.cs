@@ -1,30 +1,54 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
-using Blog.Application.Interfaces;
 using Blog.Application.Users.Queries.GetUsersByRole;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Blog.Application.Settings;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
+using Blog.Domain.Models;
 
 namespace Blog.Application.UserSubscriptions.Queries.GetUserSubscriptions;
 
 public class GetUserSubscriptionQueryHandler : IRequestHandler<GetUserSubscriptionQuery, UserList>
 {
-    private readonly IBlogDbContext _dbContext;
+    private readonly IMongoCollection<UserSubscription> _subscriptionCollection;
+    private readonly IMongoCollection<User> _userCollection;
     private readonly IMapper _mapper;
-    public GetUserSubscriptionQueryHandler(IBlogDbContext dbContext, IMapper mapper)
+
+    public GetUserSubscriptionQueryHandler(IMapper mapper, IOptions<MongoEntitiesDBSettings> entitiesStoreDatabaseSettings, IOptions<MongoUserDBSettings> userStoreDatabaseSettings)
     {
-        _dbContext = dbContext;
         _mapper = mapper;
+
+        var mongoClient = new MongoClient(
+           entitiesStoreDatabaseSettings.Value.ConnectionString);
+
+        var mongoDatabase = mongoClient.GetDatabase(
+            entitiesStoreDatabaseSettings.Value.DatabaseName);
+
+        _subscriptionCollection = mongoDatabase.GetCollection<UserSubscription>(
+           entitiesStoreDatabaseSettings.Value.CollectionName);
+
+        var mongoClientUser = new MongoClient(
+          userStoreDatabaseSettings.Value.ConnectionString);
+
+        var mongoDatabaseUser = mongoClientUser.GetDatabase(
+            userStoreDatabaseSettings.Value.DatabaseName);
+
+        _userCollection = mongoDatabaseUser.GetCollection<User>(
+            userStoreDatabaseSettings.Value.CollectionName);
     }
     public async Task<UserList> Handle(GetUserSubscriptionQuery request, CancellationToken cancellationToken)
     {
-        var userToSubscribeIdQuery = await _dbContext.UserSubscriptions
-            .Where(user => user.UserToSubscribeId == request.UserId)
+        var userToSubscribeIdQuery = (await _subscriptionCollection
+            .FindAsync(Builders<UserSubscription>.Filter.Eq("_t", "UserSubscription") & Builders<UserSubscription>.Filter.Eq("UserSubscribedToId", request.UserId),null, cancellationToken))
+            .ToEnumerable()
             .Select(u => u.UserId)
-            .ToListAsync(cancellationToken);
+            .ToList();
 
-        var usersQuery = await _dbContext.Users
-            .Where(u => userToSubscribeIdQuery.Contains(u.Id))
+        var usersQuery = (await _userCollection
+            .FindAsync(u => userToSubscribeIdQuery.Contains(u.Id), null, cancellationToken))
+            .ToEnumerable()
             .Select(u => new UserLookUpDto
             {
                 UserName = u.UserName,
@@ -35,7 +59,7 @@ public class GetUserSubscriptionQueryHandler : IRequestHandler<GetUserSubscripti
                 LastName = u.LastName,
                 Role = u.Role
             })
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         return new UserList { Users = usersQuery };
     }

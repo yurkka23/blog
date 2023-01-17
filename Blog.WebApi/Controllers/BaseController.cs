@@ -19,4 +19,8 @@ public abstract class BaseController : ControllerBase
         ? HttpContext.User.FindFirst(ClaimTypes.Role).Value
         : Role.User.ToString();
 
+    internal string UserName => HttpContext.User.Identity.IsAuthenticated
+        ? HttpContext.User.FindFirst(ClaimTypes.Name).Value
+        : "";
+
 }

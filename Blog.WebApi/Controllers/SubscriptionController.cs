@@ -23,7 +23,7 @@ public class SubscriptionController : BaseController
         var command = _mapper.Map<CreateSubscriptionCommand>(request);
         command.UserId = UserId;
         await Mediator.Send(command, cancellationToken);
-      
+
         return Ok();
     }
 

@@ -1,4 +1,6 @@
-﻿namespace Blog.WebApi.Controllers;
+﻿using Blog.Application.Users.Queries.GetUser;
+
+namespace Blog.WebApi.Controllers;
 
 [Route("auth/")]
 [ApiController]
@@ -7,19 +9,18 @@ public class AuthController : BaseController
 {
     private readonly UserManager<User> _userManager;
     private readonly SignInManager<User> _signInManager;
-    private readonly IBlogDbContext _blogContext;
     private readonly IUserService _userService;
     private readonly ICacheService _cacheService;
 
-    public AuthController(IUserService userService, IBlogDbContext blogContext,
-        SignInManager<User> signInManager, UserManager<User> userManager, IMediator mediator, ICacheService cacheService) : base(mediator)
+    public AuthController(IUserService userService,
+        SignInManager<User> signInManager,ICacheService cacheService, UserManager<User> userManager , IMediator mediator) : base(mediator)
     {
         _userService = userService;
-        _blogContext = blogContext;
         _signInManager = signInManager;
         _userManager = userManager;
         _cacheService = cacheService;   
     }
+
     [AllowAnonymous]
     [HttpPost("register")]
     public async Task<ActionResult<Guid>> Register([FromBody] UserRegisterDTO request)
@@ -71,26 +72,36 @@ public class AuthController : BaseController
             return BadRequest(ModelState);
         }
 
-        var user = await _blogContext.Users.FirstOrDefaultAsync(u => u.UserName == request.UserName);
-
-
-        if (user == null)
+        var query = new CheckUserQuery
         {
-            return BadRequest("User with such username doesn't exist");
+            UserName = request.UserName
+        };
+        var existUser = await Mediator.Send(query);
+
+        if (!existUser)
+        {
+            return BadRequest("User with such username doesn't exists");
         }
 
-        var res = _signInManager.PasswordSignInAsync(request.UserName, request.Password,false,false);
+
+        var res = _signInManager.PasswordSignInAsync(request.UserName, request.Password, false, false);
 
         if (!res.Result.Succeeded)
         {
             return BadRequest("Wrong password");
         }
 
-       
+        var queryUser = new GetUserQuery
+        {
+            UserName = request.UserName
+        };
+
+        var user =  await Mediator.Send(queryUser);
+
         var token = _userService.CreateToken(user);
-       
+
         var refreshToken = _userService.GenerateRefreshToken();
-        await _userService.SetRefreshToken(refreshToken, user, HttpContext, _blogContext, CancellationToken.None);
+        await _userService.SetRefreshToken(refreshToken, user, HttpContext, CancellationToken.None);
         var response = new AuthResponseDTO
         {
             JwtToken = token,
@@ -113,7 +124,14 @@ public class AuthController : BaseController
     public async Task<ActionResult<AuthRefreshDTO>> LoginWithFacebook([FromBody] FacebookLoginDTO request)
     {
         string UserNameDTO = request.Email?.Split('@')[0] ?? request.Id;
-        var user = await _blogContext.Users.FirstOrDefaultAsync(u => u.UserName == UserNameDTO);
+
+        var queryUser = new GetUserQuery
+        {
+            UserName = UserNameDTO
+        };
+
+        var user = await Mediator.Send(queryUser);
+
 
         if (user == null)
         {
@@ -132,7 +150,7 @@ public class AuthController : BaseController
 
             if (result.Succeeded)
             {
-                await _cacheService.DeleteAsync("UserListSearch");
+                 await _cacheService.DeleteAsync("UserListSearch");
             }
         }
 
@@ -141,7 +159,7 @@ public class AuthController : BaseController
         var token = _userService.CreateToken(user);
 
         var refreshToken = _userService.GenerateRefreshToken();
-        await _userService.SetRefreshToken(refreshToken, user, HttpContext, _blogContext, CancellationToken.None);
+        await _userService.SetRefreshToken(refreshToken, user, HttpContext, CancellationToken.None);
         var response = new AuthResponseDTO
         {
             JwtToken = token,
@@ -162,9 +180,14 @@ public class AuthController : BaseController
     [HttpPost("refresh-token")]
     public async Task<ActionResult<AuthRefreshDTO>> RefreshToken([FromBody] AuthRequestDTO request)
     {
-        var user = await _blogContext.Users.FirstOrDefaultAsync(u => u.Id == request.Id);
-       
-        if(user == null)
+        var queryUser = new GetUserQuery
+        {
+            UserName = UserName
+        };
+
+        var user = await Mediator.Send(queryUser);
+
+        if (user == null)
         {
             return NotFound("Not found such user");
         }
@@ -180,8 +203,8 @@ public class AuthController : BaseController
 
         string token = _userService.CreateToken(user);
         var newRefreshToken = _userService.GenerateRefreshToken();
-        
-        await _userService.SetRefreshToken(newRefreshToken,user,HttpContext, _blogContext, CancellationToken.None);
+
+        await _userService.SetRefreshToken(newRefreshToken, user, HttpContext, CancellationToken.None);
 
         var response = new AuthRefreshDTO
         {

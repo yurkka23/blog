@@ -1,41 +1,67 @@
 ﻿using Blog.Domain.Models;
 using MediatR;
-using Blog.Application.Interfaces;
 using Blog.Application.Caching;
 using Microsoft.EntityFrameworkCore;
 using Blog.Application.Common.Exceptions;
+using Blog.Application.Settings;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
 
 namespace Blog.Application.Messages.Commands.CreateMessage;
 
 public class CreateMessageCommandHandler : IRequestHandler<CreateMessageCommand, Guid>
 {
-    private readonly IBlogDbContext _dbContext;
+    private readonly IMongoCollection<MongoEntity> _entitiesCollection;
+    private readonly IMongoCollection<User> _userCollection;
 
-    public CreateMessageCommandHandler(IBlogDbContext dbContext)
+    public CreateMessageCommandHandler(IOptions<MongoEntitiesDBSettings> entitiesStoreDatabaseSettings, IOptions<MongoUserDBSettings> userStoreDatabaseSettings)
     {
-        _dbContext = dbContext;
+        var mongoClient = new MongoClient(
+           entitiesStoreDatabaseSettings.Value.ConnectionString);
+
+        var mongoDatabase = mongoClient.GetDatabase(
+            entitiesStoreDatabaseSettings.Value.DatabaseName);
+
+        _entitiesCollection = mongoDatabase.GetCollection<MongoEntity>(
+            entitiesStoreDatabaseSettings.Value.CollectionName);
+
+        var mongoClientUser = new MongoClient(
+          userStoreDatabaseSettings.Value.ConnectionString);
+
+        var mongoDatabaseUser = mongoClientUser.GetDatabase(
+            userStoreDatabaseSettings.Value.DatabaseName);
+
+        _userCollection = mongoDatabaseUser.GetCollection<User>(
+            userStoreDatabaseSettings.Value.CollectionName);
     }
     public async Task<Guid> Handle(CreateMessageCommand request, CancellationToken cancellationToken)
     {
+        var sender = (await _userCollection
+          .FindAsync(x => x.Id == request.SenderId,null, cancellationToken))
+          .FirstOrDefault();
 
-        var sender = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == request.SenderId, cancellationToken);
-        var recipient = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == request.RecipientId, cancellationToken);
+        var recipient = (await _userCollection
+          .FindAsync(x => x.Id == request.RecipientId, null, cancellationToken))
+          .FirstOrDefault();
 
         var message = new Message
-        { 
+        {
+            EntityId = Guid.NewGuid(),
+            UserId = sender.Id,
             RecipienId = recipient.Id,
             SenderId = sender.Id,
             Content = request.Content.Trim(),
             SenderUsername = sender.UserName,
             RecipienUsername = recipient.UserName,
-            Sender = sender,
-            Recipient = recipient,
-            MessageSent = DateTime.UtcNow
+            MessageSent = DateTime.UtcNow,
+            DateRead = null,
+            RecipientDeleted = false,
+            SenderDeleted = false
         };
 
-        await _dbContext.Messages.AddAsync(message, cancellationToken);
-        await _dbContext.SaveChangesAsync(cancellationToken);
-        return message.Id;
+        await _entitiesCollection.InsertOneAsync(message, cancellationToken);
+
+        return message.EntityId;
     }
 
 }

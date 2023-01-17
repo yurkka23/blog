@@ -6,12 +6,12 @@ namespace Blog.Application.Comments.Queries.GetCommentsByArticle;
 
 public class CommentLookupDto : IMapWith<Comment>
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
     public string Message { get; set; } = string.Empty;
     public string AuthorUserName { get; set; } = string.Empty;
     public string AuthorImgUrl { get; set; } = string.Empty;
     public void Mapping(Profile profile)
     {
-        profile.CreateMap<Comment, CommentLookupDto>();
+        profile.CreateMap<Comment, CommentLookupDto>().ForMember(x => x.Id , x => x.MapFrom(src => src.EntityId));
     }
 }

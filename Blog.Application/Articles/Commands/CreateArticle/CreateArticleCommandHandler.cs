@@ -3,26 +3,35 @@ using Blog.Domain.Enums;
 using Blog.Domain.Models;
 using MediatR;
 using Blog.Domain;
-using Blog.Application.Interfaces;
 using Blog.Application.Caching;
+using Blog.Application.Settings;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
 
 namespace Blog.Application.Articles.Commands.CreateArticle;
 
-//logic to create article
-public class CreateArticleCommandHandler : IRequestHandler<CreateArticleCommand, Guid>//1 request, 2 response
+public class CreateArticleCommandHandler : IRequestHandler<CreateArticleCommand, Guid>
 {
-    private readonly IBlogDbContext _dbContext;
-    private readonly ICacheService _cacheService;
-    public CreateArticleCommandHandler(IBlogDbContext dbContext, ICacheService cacheService)
+    private readonly ICacheService _cacheService;   
+    private readonly IMongoCollection<MongoEntity> _entitiesCollection;
+
+    public CreateArticleCommandHandler(IOptions<MongoEntitiesDBSettings> entitiesStoreDatabaseSettings, ICacheService cacheService)
     {
-        _dbContext = dbContext;
         _cacheService = cacheService;
+        var mongoClient = new MongoClient(
+           entitiesStoreDatabaseSettings.Value.ConnectionString);
+
+        var mongoDatabase = mongoClient.GetDatabase(
+            entitiesStoreDatabaseSettings.Value.DatabaseName);
+
+        _entitiesCollection = mongoDatabase.GetCollection<MongoEntity>(
+            entitiesStoreDatabaseSettings.Value.CollectionName);
     }
     public async Task<Guid> Handle(CreateArticleCommand request, CancellationToken cancellationToken)
     {
         var article = new Article
         {
-            Id = Guid.NewGuid(),
+            EntityId = Guid.NewGuid(),
             UserId = request.UserId,
             Title = request.Title,
             Content = request.Content,
@@ -34,12 +43,12 @@ public class CreateArticleCommandHandler : IRequestHandler<CreateArticleCommand,
             CreatedBy = request.UserId,
             UpdatedBy = null
         };
-        await _dbContext.Articles.AddAsync(article, cancellationToken);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _entitiesCollection.InsertOneAsync(article, cancellationToken);
 
         await _cacheService.DeleteAsync($"ArticleListByGenre {request.Genre}");
         await _cacheService.DeleteAsync("ArticleListSearch");
 
-        return article.Id;
+        return article.EntityId;
     }
 }

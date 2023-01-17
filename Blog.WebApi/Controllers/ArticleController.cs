@@ -5,8 +5,8 @@
 public class ArticleController : BaseController
 {
     private readonly IMapper _mapper;
-       
-    public ArticleController(IMapper mapper, IMediator mediator): base(mediator) 
+
+    public ArticleController(IMapper mapper, IMediator mediator) : base(mediator)
     {
         _mapper = mapper;
     }
@@ -16,7 +16,7 @@ public class ArticleController : BaseController
     {
         var query = new GetArticleListQuery
         {
-           State = State.Approved
+            State = State.Approved
         };
         var response = await Mediator.Send(query, cancellationToken);
         return Ok(response);
@@ -33,7 +33,7 @@ public class ArticleController : BaseController
         return Ok(response);
     }
     [HttpGet("get-article-genres")]
-    public async Task<ActionResult<GenresList>> GetArticleGenres(int count , CancellationToken cancellationToken)
+    public async Task<ActionResult<GenresList>> GetArticleGenres(int count, CancellationToken cancellationToken)
     {
         var query = new GetArticleGenresQuery
         {
@@ -47,14 +47,14 @@ public class ArticleController : BaseController
     {
         var query = new GetArticleListByGenreQuery
         {
-            State= State.Approved,
+            State = State.Approved,
             Genre = genre
         };
         var response = await Mediator.Send(query, cancellationToken);
         return Ok(response);
     }
     [HttpGet("search-articles-by-title")]
-    public async Task<ActionResult<ArticleList>> SearchArticlesByTitle(string partTitle , CancellationToken cancellationToken)
+    public async Task<ActionResult<ArticleList>> SearchArticlesByTitle(string partTitle, CancellationToken cancellationToken)
     {
         var query = new SearchArticlesByTitleQuery
         {
@@ -74,7 +74,7 @@ public class ArticleController : BaseController
             UserId = CurrentUserId
         };
         var vm = await Mediator.Send(query, cancellationToken);
-    
+
         return Ok(vm);
     }
 
@@ -87,7 +87,7 @@ public class ArticleController : BaseController
             UserId = UserId
         };
         var vm = await Mediator.Send(query, cancellationToken);
-      
+
         return Ok(vm);
     }
 
@@ -107,7 +107,7 @@ public class ArticleController : BaseController
 
     [HttpPost("create-article")]
     [Authorize]
-    public async Task<ActionResult<Guid>> CreateArticle([FromBody] CreateArticleDTO createArticleDto,CancellationToken cancellationToken)
+    public async Task<ActionResult<Guid>> CreateArticle([FromBody] CreateArticleDTO createArticleDto, CancellationToken cancellationToken)
     {
         var command = _mapper.Map<CreateArticleCommand>(createArticleDto);
         command.UserId = UserId;
@@ -136,7 +136,7 @@ public class ArticleController : BaseController
             Id = id,
             UserId = UserId,
             Role = UserRole == "User" ? Role.User : Role.Admin,
-            
+
         }, cancellationToken);
         return NoContent();
     }

@@ -1,27 +1,39 @@
 ﻿using Blog.Domain.Models;
 using MediatR;
-using Blog.Application.Interfaces;
+using Blog.Application.Settings;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
 
 namespace Blog.Application.Comments.Commands.CreateComment;
 
-public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand, int>
+public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand, Guid>
 {
-    private readonly IBlogDbContext _dbContext;
-    public CreateCommentCommandHandler(IBlogDbContext dbContext)
+    private readonly IMongoCollection<MongoEntity> _entitiesCollection;
+
+    public CreateCommentCommandHandler(IOptions<MongoEntitiesDBSettings> entitiesStoreDatabaseSettings)
     {
-        _dbContext = dbContext;
+        var mongoClient = new MongoClient(
+           entitiesStoreDatabaseSettings.Value.ConnectionString);
+
+        var mongoDatabase = mongoClient.GetDatabase(
+            entitiesStoreDatabaseSettings.Value.DatabaseName);
+
+        _entitiesCollection = mongoDatabase.GetCollection<MongoEntity>(
+            entitiesStoreDatabaseSettings.Value.CollectionName);
     }
-    public async Task<int> Handle(CreateCommentCommand request, CancellationToken cancellationToken)
+    public async Task<Guid> Handle(CreateCommentCommand request, CancellationToken cancellationToken)
     {
         var comment = new Comment
         {
+            EntityId = Guid.NewGuid(),
             UserId = request.UserId,
             Message = request.Message,
-            ArticleId = request.ArticleId,        
+            ArticleId = request.ArticleId,
+            CreatedTime = DateTime.UtcNow
         };
-        await _dbContext.Comments.AddAsync(comment, cancellationToken);
-        await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return comment.Id;
+        await _entitiesCollection.InsertOneAsync(comment, cancellationToken);
+
+        return comment.EntityId;
     }
 }

@@ -14,10 +14,6 @@ public class UpdateCommentCommandValidator : AbstractValidator<UpdateCommentComm
             .MaximumLength(200)
             .WithMessage("Massage must not be longer then 200!");
 
-        RuleFor(command => command.ArticleId)
-            .NotEqual(Guid.Empty)
-            .WithMessage("Massage must have Article Id!");
-
         RuleFor(command => command.UserId)
             .NotEqual(Guid.Empty)
             .WithMessage("Massage must have User Id!");

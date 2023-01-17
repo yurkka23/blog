@@ -1,12 +1,9 @@
 ﻿using AutoMapper;
 using Blog.Application.Common.Mappings;
 using Blog.Domain.Enums;
-using Blog.Domain.Helpers;
 using Blog.Domain.Models;
 
 namespace Blog.Application.Articles.Queries.GetArticleContent;
-
-//view model will return to client
 public class ArticleContent : IMapWith<Article>
 {
     public string Title { get; set; } = string.Empty;

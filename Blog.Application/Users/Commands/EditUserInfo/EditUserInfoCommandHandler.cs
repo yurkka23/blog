@@ -1,27 +1,36 @@
 ﻿using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Blog.Application.Interfaces;
 using Blog.Application.Common.Exceptions;
 using Blog.Domain.Models;
 using Blog.Application.Caching;
-
+using MongoDB.Driver;
+using Blog.Application.Settings;
+using Microsoft.Extensions.Options;
 
 namespace Blog.Application.Users.Commands.EditUserInfo;
 
 public class EditUserInfoCommandHandler : AsyncRequestHandler<EditUserInfoCommand>
 {
-    private readonly IBlogDbContext _dbContext;
     private readonly ICacheService _cacheService;
-    public EditUserInfoCommandHandler(IBlogDbContext dbContext, ICacheService cacheService)
+    private readonly IMongoCollection<User> _userCollection;
+
+    public EditUserInfoCommandHandler(IOptions<MongoUserDBSettings> userStoreDatabaseSettings, ICacheService cacheService)
     {
-        _dbContext = dbContext;
         _cacheService = cacheService;
+        var mongoClient = new MongoClient(
+          userStoreDatabaseSettings.Value.ConnectionString);
+
+        var mongoDatabase = mongoClient.GetDatabase(
+            userStoreDatabaseSettings.Value.DatabaseName);
+
+        _userCollection = mongoDatabase.GetCollection<User>(
+            userStoreDatabaseSettings.Value.CollectionName);
     }
     protected override async Task Handle(EditUserInfoCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == request.Id, cancellationToken);
-        
-        
+        var entity = (await _userCollection
+           .FindAsync(Builders<User>.Filter.Eq("_id", request.Id), null, cancellationToken))
+           .FirstOrDefault();
+
         if (entity == null || entity.Id != request.Id)
         {
             throw new NotFoundException(nameof(User), request.Id);
@@ -29,14 +38,17 @@ public class EditUserInfoCommandHandler : AsyncRequestHandler<EditUserInfoComman
 
         if (entity.UserName != request.UserName)
         {
-            var checkIfUserExist = await _dbContext.Users.FirstOrDefaultAsync(user => user.UserName == request.UserName, cancellationToken);
+            var checkIfUserExist = (await _userCollection
+            .FindAsync(Builders<User>.Filter.Eq("UserName", request.UserName)))
+            .FirstOrDefault();
+
             if (checkIfUserExist != null)
             {
-                throw new Exception("User with uch username already exists");
+                throw new Exception("User with such username already exists");
             }
         }
 
-        if(entity.UserName != request.UserName)
+        if (entity.UserName != request.UserName)
         {
             await _cacheService.DeleteAsync("UserListSearch");
         }
@@ -46,8 +58,8 @@ public class EditUserInfoCommandHandler : AsyncRequestHandler<EditUserInfoComman
         entity.LastName = request.LastName;
         entity.AboutMe = request.AboutMe;
         entity.ImageUserUrl = request.ImageUserUrl;
-      
-        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _userCollection.ReplaceOneAsync(Builders<User>.Filter.Eq("_id", request.Id), entity, new ReplaceOptions { IsUpsert = false });
 
     }
 }

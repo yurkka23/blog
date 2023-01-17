@@ -7,10 +7,10 @@ public class CommentController : BaseController
 {
     private readonly IMapper _mapper;
 
-    public CommentController(IMapper mapper , IMediator mediator) : base(mediator)
+    public CommentController(IMapper mapper, IMediator mediator) : base(mediator)
     {
         _mapper = mapper;
-    } 
+    }
 
     [HttpGet("get-comments-by-article")]
     [AllowAnonymous]
@@ -43,15 +43,15 @@ public class CommentController : BaseController
     }
 
     [HttpDelete("delete-comment")]
-    public async Task<IActionResult> DeleteComment(int id, CancellationToken cancellationToken)
-    { 
+    public async Task<IActionResult> DeleteComment(Guid id, CancellationToken cancellationToken)
+    {
 
         var commentId = await Mediator.Send(new DeleteCommentCommand
         {
             Id = id,
             UserId = UserId,
             Role = UserRole == "User" ? Role.User : Role.Admin
-    }, cancellationToken);
+        }, cancellationToken);
         return NoContent();
     }
 }

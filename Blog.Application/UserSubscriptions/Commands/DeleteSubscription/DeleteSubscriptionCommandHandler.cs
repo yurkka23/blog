@@ -1,24 +1,32 @@
-﻿
-
-using Blog.Application.Interfaces;
+﻿using MongoDB.Driver;
+using Blog.Application.Settings;
+using Microsoft.Extensions.Options;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
+using Blog.Domain.Models;
 
 namespace Blog.Application.UserSubscriptions.Commands.DeleteSubscription;
 
 public class DeleteSubscriptionCommandHandler : IRequestHandler<DeleteSubscriptionCommand>
 {
-    private readonly IBlogDbContext _dbContext;
-    public DeleteSubscriptionCommandHandler(IBlogDbContext dbContext)
+    private readonly IMongoCollection<UserSubscription> _entitiesCollection;
+
+    public DeleteSubscriptionCommandHandler(IOptions<MongoEntitiesDBSettings> entitiesStoreDatabaseSettings)
     {
-        _dbContext = dbContext;
+        var mongoClient = new MongoClient(
+           entitiesStoreDatabaseSettings.Value.ConnectionString);
+
+        var mongoDatabase = mongoClient.GetDatabase(
+            entitiesStoreDatabaseSettings.Value.DatabaseName);
+
+        _entitiesCollection = mongoDatabase.GetCollection<UserSubscription>(
+            entitiesStoreDatabaseSettings.Value.CollectionName);
     }
     public async Task<Unit> Handle(DeleteSubscriptionCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _dbContext.UserSubscriptions.FirstOrDefaultAsync(s => s.UserId == request.UserId && s.UserToSubscribeId == request.UserToSubscribeId, cancellationToken);
-
-        _dbContext.UserSubscriptions.Remove(entity);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await _entitiesCollection
+            .DeleteOneAsync(Builders<UserSubscription>.Filter.Eq("_t", "UserSubscription") 
+            & Builders<UserSubscription>.Filter.Eq("UserId", request.UserId) 
+            & Builders<UserSubscription>.Filter.Eq("UserSubscribedToId", request.UserToSubscribeId), cancellationToken);
 
         return Unit.Value;
     }

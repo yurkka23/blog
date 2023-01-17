@@ -9,7 +9,7 @@ public class RatingController : BaseController
     public RatingController(IMapper mapper, IMediator mediator) : base(mediator)
     {
         _mapper = mapper;
-    } 
+    }
 
     [HttpGet("get-rating-list-by-article")]
     public async Task<ActionResult<RatingList>> GetRatingListByArticle(Guid id, CancellationToken cancellationToken)

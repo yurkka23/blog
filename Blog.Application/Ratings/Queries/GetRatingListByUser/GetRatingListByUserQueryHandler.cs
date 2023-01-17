@@ -1,57 +1,65 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Blog.Application.Common.Exceptions;
-using Blog.Application.Interfaces;
 using Blog.Domain.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Blog.Application.Settings;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
 
 namespace Blog.Application.Ratings.Queries.GetRatingListByUser;
 
 public class GetRatingListByUserQueryHandler : IRequestHandler<GetRatingListByUserQuery, RatingList>
 {
-    private readonly IBlogDbContext _dbContext;
+    private readonly IMongoCollection<Rating> _ratingCollection;
+    private readonly IMongoCollection<Article> _articleCollection;
+    private readonly IMongoCollection<User> _userCollection;
     private readonly IMapper _mapper;
-    public GetRatingListByUserQueryHandler(IBlogDbContext dbContext, IMapper mapper)
+
+    public GetRatingListByUserQueryHandler(IMapper mapper, IOptions<MongoEntitiesDBSettings> entitiesStoreDatabaseSettings, IOptions<MongoUserDBSettings> userStoreDatabaseSettings)
     {
-        _dbContext = dbContext;
         _mapper = mapper;
+
+        var mongoClient = new MongoClient(
+           entitiesStoreDatabaseSettings.Value.ConnectionString);
+
+        var mongoDatabase = mongoClient.GetDatabase(
+            entitiesStoreDatabaseSettings.Value.DatabaseName);
+
+        _ratingCollection = mongoDatabase.GetCollection<Rating>(
+            entitiesStoreDatabaseSettings.Value.CollectionName);
+
+        _articleCollection = mongoDatabase.GetCollection<Article>(
+           entitiesStoreDatabaseSettings.Value.CollectionName);
+
+        var mongoClientUser = new MongoClient(
+          userStoreDatabaseSettings.Value.ConnectionString);
+
+        var mongoDatabaseUser = mongoClientUser.GetDatabase(
+            userStoreDatabaseSettings.Value.DatabaseName);
+
+        _userCollection = mongoDatabaseUser.GetCollection<User>(
+            userStoreDatabaseSettings.Value.CollectionName);
     }
     public async Task<RatingList> Handle(GetRatingListByUserQuery request, CancellationToken cancellationToken)
     {
-        if (request.UserId == Guid.Empty)
-        {
-            throw new NotFoundException(nameof(User), request.UserId);
-        }
+       
+        var ratingQuery = _ratingCollection
+           .Find(Builders<Rating>.Filter.Eq("_t", "Rating") & Builders<Rating>.Filter.Eq("UserId", request.UserId))
+           .SortByDescending(x => x.CreatedTime)
+           .ToEnumerable()
+           .Select(ent => new RatingLookupDto
+           {
+               Id = ent.EntityId,
+               ArticleId = ent.ArticleId,
+               ArticleImage = _articleCollection.Find(Builders<Article>.Filter.Eq("_t", "Article") & Builders<Article>.Filter.Eq("_id", ent.ArticleId)).First().ArticleImageUrl,
+               ArticleTitle = _articleCollection.Find(Builders<Article>.Filter.Eq("_t", "Article") & Builders<Article>.Filter.Eq("_id", ent.ArticleId)).First().Title,
+               Score = ent.Score
+           })
+           .ToList();
 
-        var ratingQuery = await _dbContext.Ratings
-            .Where(rating => rating.UserId == request.UserId)
-            .OrderByDescending(rating => rating.Id)
-            .ToListAsync(cancellationToken);
-
-        var ratingList = new List<RatingLookupDto>();
-
-        if (ratingQuery.Count > 0)
-        {
-            var index = 0;
-            foreach (var rating in ratingQuery)
-            {
-                var getArticleInfo = await _dbContext.Articles
-                .Where(article => article.Id == ratingQuery[index].ArticleId)
-                .ToListAsync(cancellationToken);
-
-                var temp = _mapper.Map<RatingLookupDto>(rating);
-                temp.ArticleTitle = getArticleInfo[0].Title;
-                temp.ArticleImage = getArticleInfo[0].ArticleImageUrl;
-                temp.ArticleId = getArticleInfo[0].Id;
-                ratingList.Add(temp);
-                index++;
-            }
-        }
-
-
-
-        return new RatingList { Ratings = ratingList };
+        return new RatingList { Ratings = ratingQuery };
     }
 
 }
