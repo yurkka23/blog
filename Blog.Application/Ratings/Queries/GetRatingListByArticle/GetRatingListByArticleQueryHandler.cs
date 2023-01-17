@@ -1,35 +1,64 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Blog.Application.Common.Exceptions;
-using Blog.Application.Interfaces;
 using Blog.Application.Ratings.Queries.GetRatingByArticle;
 using Blog.Domain.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Blog.Application.Settings;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
 
 namespace Blog.Application.Ratings.Queries.GetRatingListByArticle;
 
 public class GetRatingListByArticleQueryHandler : IRequestHandler<GetRatingListByArticleQuery, RatingList>
 {
-    private readonly IBlogDbContext _dbContext;
+    private readonly IMongoCollection<Rating> _ratingCollection;
+    private readonly IMongoCollection<Article> _articleCollection;
+    private readonly IMongoCollection<User> _userCollection;
     private readonly IMapper _mapper;
-    public GetRatingListByArticleQueryHandler(IBlogDbContext dbContext, IMapper mapper)
+
+    public GetRatingListByArticleQueryHandler(IMapper mapper, IOptions<MongoEntitiesDBSettings> entitiesStoreDatabaseSettings, IOptions<MongoUserDBSettings> userStoreDatabaseSettings)
     {
-        _dbContext = dbContext;
         _mapper = mapper;
+
+        var mongoClient = new MongoClient(
+           entitiesStoreDatabaseSettings.Value.ConnectionString);
+
+        var mongoDatabase = mongoClient.GetDatabase(
+            entitiesStoreDatabaseSettings.Value.DatabaseName);
+
+        _ratingCollection = mongoDatabase.GetCollection<Rating>(
+            entitiesStoreDatabaseSettings.Value.CollectionName);
+
+        _articleCollection = mongoDatabase.GetCollection<Article>(
+           entitiesStoreDatabaseSettings.Value.CollectionName);
+
+        var mongoClientUser = new MongoClient(
+          userStoreDatabaseSettings.Value.ConnectionString);
+
+        var mongoDatabaseUser = mongoClientUser.GetDatabase(
+            userStoreDatabaseSettings.Value.DatabaseName);
+
+        _userCollection = mongoDatabaseUser.GetCollection<User>(
+            userStoreDatabaseSettings.Value.CollectionName);
     }
     public async Task<RatingList> Handle(GetRatingListByArticleQuery request, CancellationToken cancellationToken)
     {
 
-        var ratingQuery = await _dbContext.Ratings
-            .Where(rating => rating.ArticleId == request.ArticleId)
-            .ProjectTo<RatingLookupDto>(_mapper.ConfigurationProvider)
-            .ToListAsync(cancellationToken);
-
-        if (request.ArticleId == Guid.Empty)
-        {
-            throw new NotFoundException(nameof(Article), request.ArticleId);
-        }
+        var ratingQuery = _ratingCollection
+            .Find(Builders<Rating>.Filter.Eq("_t", "Rating") & Builders<Rating>.Filter.Eq("ArticleId", request.ArticleId))
+            .SortByDescending(x=> x.CreatedTime)
+            .ToEnumerable()
+            .Select(ent => new RatingLookupDto
+            {
+                Id = ent.EntityId,
+                ArticleId = ent.ArticleId,
+                ArticleImage = _articleCollection.Find(Builders<Article>.Filter.Eq("_t", "Article") & Builders<Article>.Filter.Eq("_id", ent.ArticleId)).First().ArticleImageUrl,
+                ArticleTitle = _articleCollection.Find(Builders<Article>.Filter.Eq("_t", "Article") & Builders<Article>.Filter.Eq("_id", ent.ArticleId)).First().Title,
+                Score = ent.Score
+            })
+            .ToList();
 
         return new RatingList { Ratings = ratingQuery };
     }

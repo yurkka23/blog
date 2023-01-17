@@ -1,27 +1,41 @@
 ﻿using AutoMapper;
-using Blog.Application.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Blog.Application.Settings;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
+using Blog.Domain.Models;
 
 namespace Blog.Application.Articles.Queries.GetArticeGenres;
 
 public class GetArticleGenresQueryHandler : IRequestHandler<GetArticleGenresQuery, GenresList>
 {
-    private readonly IBlogDbContext _dbContext;
     private readonly IMapper _mapper;
-    public GetArticleGenresQueryHandler(IBlogDbContext dbContext, IMapper mapper)
+    private readonly IMongoCollection<Article> _entitiesCollection;
+
+    public GetArticleGenresQueryHandler(IOptions<MongoEntitiesDBSettings> entitiesStoreDatabaseSettings, IMapper mapper)
     {
-        _dbContext = dbContext;
         _mapper = mapper;
+        var mongoClient = new MongoClient(
+           entitiesStoreDatabaseSettings.Value.ConnectionString);
+
+        var mongoDatabase = mongoClient.GetDatabase(
+            entitiesStoreDatabaseSettings.Value.DatabaseName);
+
+        _entitiesCollection = mongoDatabase.GetCollection<Article>(
+            entitiesStoreDatabaseSettings.Value.CollectionName);
     }
     public async Task<GenresList> Handle(GetArticleGenresQuery request, CancellationToken cancellationToken)
     {
-        var genreList = await _dbContext.Articles
+       
+        var genreList =(await _entitiesCollection.FindAsync(Builders<Article>.Filter.Eq("_t", "Article")))
+            .ToEnumerable()
             .Select(genre => genre.Genre)
+            .Where(genre => genre != null)
             .Distinct()
             .OrderBy(genre => genre)
             .Take(request.CountGenres)
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         return new GenresList { Genres = genreList };
     }

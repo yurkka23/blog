@@ -18,7 +18,6 @@ public class ArticleByUserLookupDto : IMapWith<Article>
     public DateTime CreatedTime { get; set; }
     public void Mapping(Profile profile)
     {
-        profile.CreateMap<Article, ArticleByUserLookupDto>()
-            .ForMember(art => art.AverageRating, art => art.MapFrom(map => ArticleHelper.GetAverageRating(map)));
+        profile.CreateMap<Article, ArticleByUserLookupDto>();
     }
 }

@@ -12,10 +12,10 @@ public class UserContoller : BaseController
     {
         _mapper = mapper;
     }
-   
+
 
     [HttpGet("get-user-info-by-id")]
-    public async Task<ActionResult<UserInfo>> GetUserInfoById(Guid userId,CancellationToken cancellationToken)
+    public async Task<ActionResult<UserInfo>> GetUserInfoById(Guid userId, CancellationToken cancellationToken)
     {
         var vm = await Mediator.Send(new GetUserInfoQuery
         {
@@ -26,7 +26,7 @@ public class UserContoller : BaseController
     }
 
     [HttpGet("get-my-info")]
-    public async Task<ActionResult<UserInfo>> GetMyInfo( CancellationToken cancellationToken)
+    public async Task<ActionResult<UserInfo>> GetMyInfo(CancellationToken cancellationToken)
     {
         var vm = await Mediator.Send(new GetUserInfoQuery
         {
@@ -36,7 +36,7 @@ public class UserContoller : BaseController
         return Ok(vm);
     }
     [HttpGet("get-profile-user")]
-    public async Task<ActionResult<ProfileUser>> GetProfileUser(Guid id,CancellationToken cancellationToken)
+    public async Task<ActionResult<ProfileUser>> GetProfileUser(Guid id, CancellationToken cancellationToken)
     {
         var vm = await Mediator.Send(new GetProfileUserQuery
         {
@@ -69,7 +69,7 @@ public class UserContoller : BaseController
 
     [HttpGet("get-list-of-user")]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<UserList>> GetListUsers(Role role,CancellationToken cancellationToken)
+    public async Task<ActionResult<UserList>> GetListUsers(Role role, CancellationToken cancellationToken)
     {
         var query = new GetUsersByRoleQuery
         {

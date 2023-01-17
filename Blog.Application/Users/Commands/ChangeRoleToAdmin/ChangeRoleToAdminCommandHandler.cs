@@ -1,25 +1,36 @@
 ﻿using Blog.Application.Caching;
 using Blog.Application.Common.Exceptions;
-using Blog.Application.Interfaces;
 using Blog.Domain.Enums;
 using Blog.Domain.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-
+using MongoDB.Driver;
+using Blog.Application.Settings;
+using Microsoft.Extensions.Options;
 namespace Blog.Application.Users.Commands.ChangeRoleToAdmin;
 
 public class ChangeRoleToAdminCommandHandler : AsyncRequestHandler<ChangeRoleToAdminCommand>
 {
-    private readonly IBlogDbContext _dbContext;
     private readonly ICacheService _cacheService;
-    public ChangeRoleToAdminCommandHandler(IBlogDbContext dbContext, ICacheService cacheService)
+    private readonly IMongoCollection<User> _userCollection;
+
+    public ChangeRoleToAdminCommandHandler(IOptions<MongoUserDBSettings> userStoreDatabaseSettings, ICacheService cacheService)
     {
-        _dbContext = dbContext;
         _cacheService = cacheService;
+        var mongoClient = new MongoClient(
+           userStoreDatabaseSettings.Value.ConnectionString);
+
+        var mongoDatabase = mongoClient.GetDatabase(
+            userStoreDatabaseSettings.Value.DatabaseName);
+
+        _userCollection = mongoDatabase.GetCollection<User>(
+            userStoreDatabaseSettings.Value.CollectionName);
     }
     protected override async Task Handle(ChangeRoleToAdminCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == request.UserId, cancellationToken);
+        var entity = (await _userCollection
+            .FindAsync(Builders<User>.Filter.Eq("_id", request.UserId), null, cancellationToken))
+            .FirstOrDefault(); 
 
         if (entity == null)
         {
@@ -33,7 +44,7 @@ public class ChangeRoleToAdminCommandHandler : AsyncRequestHandler<ChangeRoleToA
 
         entity.Role = Role.Admin;
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await _userCollection.ReplaceOneAsync(Builders<User>.Filter.Eq("_id", request.UserId), entity, new ReplaceOptions { IsUpsert = false }, cancellationToken);
 
         await _cacheService.DeleteAsync("UserListSearch");
 

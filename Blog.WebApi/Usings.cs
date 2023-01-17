@@ -1,10 +1,7 @@
 ﻿global using Blog.Application;
 global using Blog.Application.Common.Mappings;
-global using Blog.Application.Interfaces;
 global using Blog.Domain;
 global using Blog.Domain.Models;
-global using Blog.Persistence;
-global using Blog.Persistence.EntityContext;
 global using Blog.WebApi.Middleware;
 global using Microsoft.AspNetCore.Authentication.JwtBearer;
 global using Microsoft.AspNetCore.Identity;
@@ -60,4 +57,6 @@ global using Blog.Application.Users.Commands.ChangeRoleToAdmin;
 global using Blog.Application.Caching;
 global using Microsoft.AspNetCore.SignalR;
 global using Blog.WebApi.SignalR;
+global using Blog.Application.Settings;
+global using MongoDB.Driver;
 

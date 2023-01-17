@@ -1,57 +1,70 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Blog.Application.Interfaces;
 using Blog.Application.Common.Exceptions;
 using Blog.Domain.Models;
 using AutoMapper;
 using Blog.Domain.Helpers;
 using Blog.Application.Caching;
+using Blog.Application.Settings;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
 
 namespace Blog.Application.Articles.Queries.GetArticleContent;
 
 public class GetArticleDetailsQueryHandler : IRequestHandler<GetArticleContentQuery, ArticleContent>
 {
-    private readonly IBlogDbContext _dbContext;
     private readonly IMapper _mapper;
     private readonly ICacheService _cacheService;
-    public GetArticleDetailsQueryHandler(IBlogDbContext dbContext, IMapper mapper, ICacheService cacheService)
+    private readonly IMongoCollection<Article> _entitiesCollection;
+    private readonly IMongoCollection<User> _userCollection;
+    private readonly IMongoCollection<Rating> _ratingCollection;
+
+    public GetArticleDetailsQueryHandler( IMapper mapper, ICacheService cacheService, IOptions<MongoEntitiesDBSettings> entitiesStoreDatabaseSettings, IOptions<MongoUserDBSettings> userStoreDatabaseSettings)
     {
-        _dbContext = dbContext;
         _mapper = mapper;
         _cacheService = cacheService;
-    }
-    public async Task<ArticleContent> Handle(GetArticleContentQuery request , CancellationToken cancellationToken)
-    {
-        var cachedEntity = await _cacheService.GetAsync<ArticleContent>($"Article {request.Id}");
+        var mongoClient = new MongoClient(
+          entitiesStoreDatabaseSettings.Value.ConnectionString);
 
-        if (cachedEntity != default)
-        {
-            return cachedEntity;
-        }
-       
-        var entity = await _dbContext.Articles
-                       .Include(art => art.Ratings)
-                       .AsNoTracking()
-                       .FirstOrDefaultAsync(article => article.Id == request.Id, cancellationToken);
+        var mongoDatabase = mongoClient.GetDatabase(
+            entitiesStoreDatabaseSettings.Value.DatabaseName);
+
+        _entitiesCollection = mongoDatabase.GetCollection<Article>(
+            entitiesStoreDatabaseSettings.Value.CollectionName);
+
+        _userCollection = mongoDatabase.GetCollection<User>(
+            userStoreDatabaseSettings.Value.CollectionName);
+
+        _ratingCollection = mongoDatabase.GetCollection<Rating>(
+            entitiesStoreDatabaseSettings.Value.CollectionName);
+    }
+    public async Task<ArticleContent> Handle(GetArticleContentQuery request, CancellationToken cancellationToken)
+    {
+        //var cachedEntity = await _cacheService.GetAsync<ArticleContent>($"Article {request.Id}");
+
+        //if (cachedEntity != default)
+        //{
+        //    return cachedEntity;
+        //}
+
+        var entity = (await _entitiesCollection.FindAsync(x => x.EntityId == request.Id,null, cancellationToken)).FirstOrDefault();
 
         if (entity == null)
         {
             throw new NotFoundException(nameof(Article), request.Id);
         }
-        
+
         var result = _mapper.Map<ArticleContent>(entity);
 
-        var getAuthorName = await _dbContext.Users
-            .Where(user => user.Id == result.CreatedBy)
-            .ToListAsync(cancellationToken);
+        var author =await _userCollection.Find(u => u.Id == result.CreatedBy).FirstOrDefaultAsync(cancellationToken);
+        
 
-        result.AverageRating = ArticleHelper.GetAverageRating(entity);
-        result.AuthorImageUrl = getAuthorName[0].ImageUserUrl;
-        result.AuthorFullName = getAuthorName[0].FirstName + ' ' + getAuthorName[0].LastName;
-        result.IsRatedByCurrentUser = entity.Ratings.Any(u => u.UserId == request.UserId);
-        result.AuthorId = result.CreatedBy;
-
-        await _cacheService.CreateAsync($"Article {request.Id}", result);
+        result.AverageRating = _ratingCollection.Find(Builders<Rating>.Filter.Eq("_t", "Rating") & Builders<Rating>.Filter.Eq("ArticleId", request.Id)).CountDocuments() > 0 ? _ratingCollection.Find(Builders<Rating>.Filter.Eq("_t", "Rating") & Builders<Rating>.Filter.Eq("ArticleId", request.Id)).ToEnumerable().Average(r => r.Score) : 0;
+        result.AuthorImageUrl = author.ImageUserUrl;
+        result.AuthorFullName = author.FirstName + ' ' + author.LastName;
+        result.AuthorId = entity.CreatedBy;
+        result.IsRatedByCurrentUser = _ratingCollection.Find(Builders<Rating>.Filter.Eq("_t", "Rating") & Builders<Rating>.Filter.Eq("ArticleId", request.Id) & Builders<Rating>.Filter.Eq("UserId", request.UserId)).CountDocuments() > 0 ? true : false;
+        //await _cacheService.CreateAsync($"Article {request.Id}", result);
 
         return result;
     }

@@ -21,8 +21,8 @@ public class MessageDTO : IMapWith<Message>
 
     public void Mapping(Profile profile)
     {
-        profile.CreateMap<Message, MessageDTO>()
-            .ForMember(d => d.SenderPhotoUrl, o => o.MapFrom(s => s.Sender.ImageUserUrl))
-            .ForMember(d => d.RecipientPhotoUrl, o => o.MapFrom(s => s.Recipient.ImageUserUrl));
+        profile.CreateMap<Message, MessageDTO>().ForMember(x => x.Id, o => o.MapFrom(s => s.EntityId));
+            //.ForMember(d => d.SenderPhotoUrl, o => o.MapFrom(s => s.Sender.ImageUserUrl))
+           // .ForMember(d => d.RecipientPhotoUrl, o => o.MapFrom(s => s.Recipient.ImageUserUrl));
     }
 }

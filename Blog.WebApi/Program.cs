@@ -1,24 +1,45 @@
-
+using MongoDB.Driver;
 
 var builder = WebApplication.CreateBuilder(args);
 
 //add services to the cointainer
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddSignalR();
-builder.Services.AddSingleton<PresenceTracker>();
-builder.Services.AddApplication(builder.Configuration);
-builder.Services.AddPersistance(builder.Configuration);
+
 builder.Services.Configure<CacheStoreDatabaseSettings>(
     builder.Configuration.GetSection("CachingStoreDatabase"));
 
+builder.Services.Configure<MongoUserDBSettings>(
+  builder.Configuration.GetSection("MongoUserDBSettings"));
+
+builder.Services.Configure<MongoEntitiesDBSettings>(
+  builder.Configuration.GetSection("MongoEntitiesDBSettings"));
+
+builder.Services.Configure<MongoConnectionsDBSettings>(
+  builder.Configuration.GetSection("MongoConnectionsDBSettings"));
+
+builder.Services.AddEndpointsApiExplorer(); 
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<PresenceTracker>();
+builder.Services.AddApplication(builder.Configuration);
+//builder.Services.AddPersistance(builder.Configuration);
+
+//mongo settings
+
+var mongoDbSettings = builder.Configuration.GetSection(nameof(MongoUserDBSettings)).Get<MongoUserDBSettings>();
+
+builder.Services.AddIdentity<User, ApplicationRole>()
+    .AddMongoDbStores<User, ApplicationRole, Guid>
+    (
+        mongoDbSettings.ConnectionString, mongoDbSettings.DatabaseName
+    );
+
+//
 builder.Services.AddControllers();
 
 builder.Services.AddAutoMapper(config =>
 {
     config.AddProfile(new AssemblyMappingProfile(Assembly.GetExecutingAssembly()));
-    config.AddProfile(new AssemblyMappingProfile(typeof(IBlogDbContext).Assembly));
+    config.AddProfile(new AssemblyMappingProfile(typeof(UserInfo).Assembly));
 });
 
 builder.Services.AddCors(options =>
@@ -45,9 +66,9 @@ builder.Services.AddSwaggerGen(options =>
     options.OperationFilter<SecurityRequirementsOperationFilter>();
 });
 
-builder.Services.AddIdentity<User, ApplicationRole>()
-    .AddEntityFrameworkStores<BlogDbContext>()
-    .AddDefaultTokenProviders();
+//builder.Services.AddIdentity<User, ApplicationRole>()
+//    .AddEntityFrameworkStores<BlogDbContext>()
+//    .AddDefaultTokenProviders();
 
 builder.Services.AddAuthentication(options => {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -92,6 +113,7 @@ builder.Services.Configure<IdentityOptions>(options =>
     options.Password.RequiredUniqueChars = 0;
 });
 
+
 builder.Services.AddHttpClient();
 
 
@@ -125,13 +147,25 @@ app.MapHub<PresenceHub>("hubs/presence");
 app.MapHub<MessageHub>("hubs/message");
 
 //clear table connection 
-using var scope = app.Services.CreateScope();
-var services = scope.ServiceProvider;
-var context = services.GetRequiredService<BlogDbContext>();
+ IMongoCollection<Connection> _connectionsCollection;
+
+var mongoClient2 = new MongoClient(
+           app.Configuration.GetSection("MongoConnectionsDBSettings:ConnectionString").Value);
+
+var mongoDatabase2 = mongoClient2.GetDatabase(
+    app.Configuration.GetSection("MongoConnectionsDBSettings:DatabaseName").Value);
+
+_connectionsCollection = mongoDatabase2.GetCollection<Connection>(
+     app.Configuration.GetSection("MongoConnectionsDBSettings:CollectionName").Value);
+
+_connectionsCollection.DeleteMany(x => true);
+//using var scope = app.Services.CreateScope();
+//var services = scope.ServiceProvider;
+//var context = services.GetRequiredService<BlogDbContext>();
 //await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE [Connections]");
 //await context.Database.ExecuteSqlRawAsync("Delete from [Connections]");
-context.Connections.RemoveRange(context.Connections);
-await context.SaveChangesAsync();
+//context.Connections.RemoveRange(context.Connections);
+//await context.SaveChangesAsync();
 
 
 app.UseEndpoints(endpoints =>

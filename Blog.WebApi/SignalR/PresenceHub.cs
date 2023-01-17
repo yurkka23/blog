@@ -28,8 +28,6 @@ public class PresenceHub : Hub
     {
         var isOffline = await _tracker.UserDisconnected(Context.User.GetUsername(), Context.ConnectionId);
 
-        var currentUsers = await _tracker.GetOnlineUsers();
-
         if (isOffline)
         {
             await Clients.Others.SendAsync("UserIsOffline", Context.User.GetUsername());

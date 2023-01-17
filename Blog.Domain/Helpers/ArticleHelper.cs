@@ -4,9 +4,9 @@ namespace Blog.Domain.Helpers;
 
 public static class ArticleHelper
 {
-    public static double GetAverageRating(Article article)
+    public static double GetAverageRating(IList<Rating> ratings)
     {
-        double averageRating = article.Ratings.Count > 0 ? article.Ratings.Average(r => r.Score) : 0;
+        double averageRating = ratings.Count() > 0 ? ratings.Average(r => r.Score) : 0;
         return averageRating;
     }
 }

@@ -1,13 +1,27 @@
-﻿using Blog.Application.Interfaces;
-using FluentValidation;
+﻿using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using Blog.Application.Settings;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
+using Blog.Domain.Models;
 
 namespace Blog.Application.Messages.Commands.CreateMessage;
 
 public class CreateMessageCommandValidator : AbstractValidator<CreateMessageCommand>
 {
-    public CreateMessageCommandValidator(IBlogDbContext dbContext)
+    private readonly IMongoCollection<User> _userCollection;
+
+    public CreateMessageCommandValidator(IOptions<MongoUserDBSettings> userStoreDatabaseSettings)
     {
+        var mongoClientUser = new MongoClient(
+         userStoreDatabaseSettings.Value.ConnectionString);
+
+        var mongoDatabaseUser = mongoClientUser.GetDatabase(
+            userStoreDatabaseSettings.Value.DatabaseName);
+
+        _userCollection = mongoDatabaseUser.GetCollection<User>(
+            userStoreDatabaseSettings.Value.CollectionName);
+
         RuleFor(m => m.RecipientId)
             .Cascade(CascadeMode.Stop)
             .NotEmpty()
@@ -16,7 +30,7 @@ public class CreateMessageCommandValidator : AbstractValidator<CreateMessageComm
             .WithMessage("RecipientId must not be empty")
             .NotEqual(m => m.SenderId)
             .WithMessage("RecipientId must not be equal to SenderId")
-            .MustAsync(async (id, cancellationToken) => await dbContext.Users.AnyAsync(t => t.Id == id, cancellationToken))
+            .Must( (id) => _userCollection.AsQueryable().Any(t => t.Id == id))
             .WithMessage("Such Recipient doesn't exists in Users");
 
         RuleFor(m => m.SenderId)
@@ -25,7 +39,7 @@ public class CreateMessageCommandValidator : AbstractValidator<CreateMessageComm
             .WithMessage("SenderId can't be empty")
             .NotEqual(Guid.Empty)
             .WithMessage("SenderId must not be empty")
-            .MustAsync(async (id, cancellationToken) => await dbContext.Users.AnyAsync(t => t.Id == id, cancellationToken))
+            .Must((id) => _userCollection.AsQueryable().Any(t => t.Id == id))
             .WithMessage("Such Sender doesn't exists in Users");
 
         RuleFor(m => m.Content)

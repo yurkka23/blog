@@ -1,5 +1,4 @@
-﻿using Blog.Application.Interfaces;
-using Blog.Domain.Models;
+﻿using Blog.Domain.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 
@@ -9,6 +8,6 @@ public interface IUserService
 {
     public bool IsAdmin(HttpContext context);
     public RefreshToken GenerateRefreshToken();
-    public Task SetRefreshToken(RefreshToken token, User user, HttpContext context, IBlogDbContext blogDbContext, CancellationToken cancellationToken);
+    public Task SetRefreshToken(RefreshToken token, User user, HttpContext context, CancellationToken cancellationToken);
     public string CreateToken(User user);
 }
