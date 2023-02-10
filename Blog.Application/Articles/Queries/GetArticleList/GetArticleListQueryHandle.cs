@@ -10,16 +10,12 @@ namespace Blog.Application.Articles.Queries.GetArticleList;
 
 public class GetArticleListQueryHandle : IRequestHandler<GetArticleListQuery, ArticleList>
 {
-    private readonly IMapper _mapper;
-    private readonly ICacheService _cacheService;
     private readonly IMongoCollection<Article> _entitiesCollection;
     private readonly IMongoCollection<User> _userCollection;
     private readonly IMongoCollection<Rating> _ratingCollection;
 
-    public GetArticleListQueryHandle(IMapper mapper, ICacheService cacheService, IOptions<MongoEntitiesDBSettings> entitiesStoreDatabaseSettings, IOptions<MongoUserDBSettings> userStoreDatabaseSettings)
+    public GetArticleListQueryHandle( IOptions<MongoEntitiesDBSettings> entitiesStoreDatabaseSettings, IOptions<MongoUserDBSettings> userStoreDatabaseSettings)
     {
-        _mapper = mapper;
-        _cacheService = cacheService;
         var mongoClient = new MongoClient(
           entitiesStoreDatabaseSettings.Value.ConnectionString);
 
@@ -55,8 +51,8 @@ public class GetArticleListQueryHandle : IRequestHandler<GetArticleListQuery, Ar
                 CreatedBy = ent.CreatedBy,
                 CreatedTime = (DateTime)ent.CreatedTime,
                 ArticleImageUrl = ent.ArticleImageUrl,
-                AuthorFullName = _userCollection.Find(x => x.Id == ent.UserId).First().FirstName + ' ' + _userCollection.Find(x => x.Id == ent.UserId).First().LastName,
-                AverageRating = _ratingCollection.Find(Builders<Rating>.Filter.Eq("_t", "Rating") & Builders<Rating>.Filter.Eq("ArticleId", ent.EntityId)).CountDocuments() > 0 ? _ratingCollection.Find(Builders<Rating>.Filter.Eq("_t", "Rating") & Builders<Rating>.Filter.Eq("ArticleId", ent.EntityId)).ToEnumerable().Select(r => (int)r.Score).AsQueryable().Average() : 0
+                AuthorFullName =_userCollection.Find(x => x.Id == ent.UserId).FirstOrDefault().FirstName + ' ' + _userCollection.Find(x => x.Id == ent.UserId).FirstOrDefault().LastName,
+                AverageRating =_ratingCollection.Find(Builders<Rating>.Filter.Eq("_t", "Rating") & Builders<Rating>.Filter.Eq("ArticleId", ent.EntityId)).CountDocuments() > 0 ? _ratingCollection.Find(Builders<Rating>.Filter.Eq("_t", "Rating") & Builders<Rating>.Filter.Eq("ArticleId", ent.EntityId)).ToEnumerable().Select(r => (int)r.Score).AsQueryable().Average() : 0
             }).ToList();
         
         return new ArticleList { Articles = articleQuery };

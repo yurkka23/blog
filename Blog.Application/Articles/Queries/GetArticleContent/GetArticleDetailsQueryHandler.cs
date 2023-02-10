@@ -14,15 +14,13 @@ namespace Blog.Application.Articles.Queries.GetArticleContent;
 public class GetArticleDetailsQueryHandler : IRequestHandler<GetArticleContentQuery, ArticleContent>
 {
     private readonly IMapper _mapper;
-    private readonly ICacheService _cacheService;
     private readonly IMongoCollection<Article> _entitiesCollection;
     private readonly IMongoCollection<User> _userCollection;
     private readonly IMongoCollection<Rating> _ratingCollection;
 
-    public GetArticleDetailsQueryHandler( IMapper mapper, ICacheService cacheService, IOptions<MongoEntitiesDBSettings> entitiesStoreDatabaseSettings, IOptions<MongoUserDBSettings> userStoreDatabaseSettings)
+    public GetArticleDetailsQueryHandler( IMapper mapper, IOptions<MongoEntitiesDBSettings> entitiesStoreDatabaseSettings, IOptions<MongoUserDBSettings> userStoreDatabaseSettings)
     {
         _mapper = mapper;
-        _cacheService = cacheService;
         var mongoClient = new MongoClient(
           entitiesStoreDatabaseSettings.Value.ConnectionString);
 
@@ -40,13 +38,7 @@ public class GetArticleDetailsQueryHandler : IRequestHandler<GetArticleContentQu
     }
     public async Task<ArticleContent> Handle(GetArticleContentQuery request, CancellationToken cancellationToken)
     {
-        //var cachedEntity = await _cacheService.GetAsync<ArticleContent>($"Article {request.Id}");
-
-        //if (cachedEntity != default)
-        //{
-        //    return cachedEntity;
-        //}
-
+       
         var entity = (await _entitiesCollection.FindAsync(x => x.EntityId == request.Id,null, cancellationToken)).FirstOrDefault();
 
         if (entity == null)
@@ -64,7 +56,6 @@ public class GetArticleDetailsQueryHandler : IRequestHandler<GetArticleContentQu
         result.AuthorFullName = author.FirstName + ' ' + author.LastName;
         result.AuthorId = entity.CreatedBy;
         result.IsRatedByCurrentUser = _ratingCollection.Find(Builders<Rating>.Filter.Eq("_t", "Rating") & Builders<Rating>.Filter.Eq("ArticleId", request.Id) & Builders<Rating>.Filter.Eq("UserId", request.UserId)).CountDocuments() > 0 ? true : false;
-        //await _cacheService.CreateAsync($"Article {request.Id}", result);
 
         return result;
     }

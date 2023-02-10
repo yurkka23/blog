@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using System.Linq;
 using Blog.Application.Settings;
+using MongoDB.Bson;
 
 namespace Blog.Application.Articles.Queries.SearchArticlesByTitle;
 
@@ -52,7 +53,7 @@ public class SearchArticlesByTitleQueryHandler : IRequestHandler<SearchArticlesB
         //}
         
         var articleQuery = (await _entitiesCollection
-          .FindAsync(Builders<Article>.Filter.Eq("_t", "Article") & Builders<Article>.Filter.Eq("State", request.State) & Builders<Article>.Filter.AnyEq("Title", request.PartTitle.Trim()), null, cancellationToken))
+          .FindAsync(Builders<Article>.Filter.Eq("_t", "Article") & Builders<Article>.Filter.Eq("State", request.State) & Builders<Article>.Filter.Regex("Title", new BsonRegularExpression(request.PartTitle.Trim().ToLower())), null, cancellationToken))
           .ToEnumerable()
           .OrderByDescending(art => art.CreatedTime)
           .Select(ent => new ArticleLookupDto

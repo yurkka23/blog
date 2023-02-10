@@ -40,7 +40,7 @@ public class SearchUserQueryHandler : IRequestHandler<SearchUserQuery, UserList>
         //    return cachedEntity;
         //}
         var userQuery = await _userCollection
-           .Find(x => x.Role == request.Role && x.UserName.Contains(request.PartUsername.Trim()))
+           .Find(x => x.Role == request.Role && x.UserName.Contains(request.PartUsername.ToLower().Trim()))
            .Project(user => new UserLookUpDto
            {
                FirstName = user.FirstName,

@@ -1,5 +1,3 @@
-using MongoDB.Driver;
-
 var builder = WebApplication.CreateBuilder(args);
 
 //add services to the cointainer
@@ -21,7 +19,6 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<PresenceTracker>();
 builder.Services.AddApplication(builder.Configuration);
-//builder.Services.AddPersistance(builder.Configuration);
 
 //mongo settings
 
@@ -65,10 +62,6 @@ builder.Services.AddSwaggerGen(options =>
     });
     options.OperationFilter<SecurityRequirementsOperationFilter>();
 });
-
-//builder.Services.AddIdentity<User, ApplicationRole>()
-//    .AddEntityFrameworkStores<BlogDbContext>()
-//    .AddDefaultTokenProviders();
 
 builder.Services.AddAuthentication(options => {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -147,7 +140,10 @@ app.MapHub<PresenceHub>("hubs/presence");
 app.MapHub<MessageHub>("hubs/message");
 
 //clear table connection 
- IMongoCollection<Connection> _connectionsCollection;
+IMongoCollection<Connection> _connectionsCollection;
+IMongoCollection<MongoEntity> _entityCollection;
+IMongoCollection<User> _userCollection;
+
 
 var mongoClient2 = new MongoClient(
            app.Configuration.GetSection("MongoConnectionsDBSettings:ConnectionString").Value);
@@ -158,15 +154,29 @@ var mongoDatabase2 = mongoClient2.GetDatabase(
 _connectionsCollection = mongoDatabase2.GetCollection<Connection>(
      app.Configuration.GetSection("MongoConnectionsDBSettings:CollectionName").Value);
 
-_connectionsCollection.DeleteMany(x => true);
-//using var scope = app.Services.CreateScope();
-//var services = scope.ServiceProvider;
-//var context = services.GetRequiredService<BlogDbContext>();
-//await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE [Connections]");
-//await context.Database.ExecuteSqlRawAsync("Delete from [Connections]");
-//context.Connections.RemoveRange(context.Connections);
-//await context.SaveChangesAsync();
+_entityCollection = mongoDatabase2.GetCollection<MongoEntity>(
+    app.Configuration.GetSection("MongoEntitiesDBSettings:CollectionName").Value);
 
+_userCollection = mongoDatabase2.GetCollection<User>(
+    app.Configuration.GetSection("MongoUserDBSettings:CollectionName").Value);
+
+_connectionsCollection.DeleteMany(x => true);
+
+//indexes
+
+var indexes = new List<CreateIndexModel<MongoEntity>>();
+var mergeMappingBuilder = Builders<MongoEntity>.IndexKeys;
+indexes.Add(new CreateIndexModel<MongoEntity>(mergeMappingBuilder.Ascending("_id").Ascending("UserId"), new CreateIndexOptions { Background = true }));
+indexes.Add(new CreateIndexModel<MongoEntity>(mergeMappingBuilder.Text("Title"), new CreateIndexOptions { Background = true }));
+indexes.Add(new CreateIndexModel<MongoEntity>(mergeMappingBuilder.Ascending("ArticleId"), new CreateIndexOptions { Background = true }));
+indexes.Add(new CreateIndexModel<MongoEntity>(mergeMappingBuilder.Ascending("UserId"), new CreateIndexOptions { Background = true }));
+
+_entityCollection.Indexes.CreateMany(indexes);
+//_entityCollection.Indexes.CreateOne(new CreateIndexModel<MongoEntity>(mergeMappingBuilder.Combine("_id", "UserId"), new CreateIndexOptions { Background = true }));error
+//_entityCollection.Indexes.CreateOne(new CreateIndexModel<MongoEntity>(mergeMappingBuilder.Text("Genre"), new CreateIndexOptions { Background = true }));//error already exist only one index text can be exist
+
+var mergeMappingBuilderUser = Builders<User>.IndexKeys;
+_userCollection.Indexes.CreateOne(new CreateIndexModel<User>(mergeMappingBuilderUser.Text("UserName"), new CreateIndexOptions { Background = true }));
 
 app.UseEndpoints(endpoints =>
 {
@@ -174,7 +184,5 @@ app.UseEndpoints(endpoints =>
 });
 
 app.MapControllers();
-
-
 
 app.Run();
