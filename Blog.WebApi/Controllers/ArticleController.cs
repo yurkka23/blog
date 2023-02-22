@@ -1,4 +1,6 @@
-﻿namespace Blog.WebApi.Controllers;
+﻿using Blog.WebApi.Extentions;
+
+namespace Blog.WebApi.Controllers;
 
 [Route("article/")]
 [ApiController]
@@ -12,13 +14,14 @@ public class ArticleController : BaseController
     }
 
     [HttpGet("get-list-of-articles")]
-    public async Task<ActionResult<ArticleList>> GetAllArticles(CancellationToken cancellationToken)
+    public async Task<ActionResult<ArticleList>> GetAllArticles([FromQuery] GetArticleListQuery query, CancellationToken cancellationToken)
     {
-        var query = new GetArticleListQuery
-        {
-           State = State.Approved
-        };
+        query.State = State.Approved;
         var response = await Mediator.Send(query, cancellationToken);
+
+        Response.AddPaginationHeader(response.CurrentPage, response.PageSize,
+               response.TotalCount, response.TotalPages);
+
         return Ok(response);
     }
 
@@ -43,25 +46,26 @@ public class ArticleController : BaseController
         return Ok(response);
     }
     [HttpGet("get-articles-by-genres")]
-    public async Task<ActionResult<ArticleList>> GetArticlesByGenres(string genre, CancellationToken cancellationToken)
+    public async Task<ActionResult<ArticleList>> GetArticlesByGenres([FromQuery] GetArticleListByGenreQuery query, CancellationToken cancellationToken)
     {
-        var query = new GetArticleListByGenreQuery
-        {
-            State= State.Approved,
-            Genre = genre
-        };
+        query.State = State.Approved;
+
         var response = await Mediator.Send(query, cancellationToken);
+
+        Response.AddPaginationHeader(response.CurrentPage, response.PageSize,
+              response.TotalCount, response.TotalPages);
         return Ok(response);
     }
     [HttpGet("search-articles-by-title")]
-    public async Task<ActionResult<ArticleList>> SearchArticlesByTitle(string partTitle , CancellationToken cancellationToken)
+    public async Task<ActionResult<ArticleList>> SearchArticlesByTitle([FromQuery] SearchArticlesByTitleQuery query, CancellationToken cancellationToken)
     {
-        var query = new SearchArticlesByTitleQuery
-        {
-            State = State.Approved,
-            PartTitle = partTitle
-        };
+        query.State = State.Approved;
+
         var response = await Mediator.Send(query, cancellationToken);
+
+        Response.AddPaginationHeader(response.CurrentPage, response.PageSize,
+              response.TotalCount, response.TotalPages);
+
         return Ok(response);
     }
 
@@ -80,28 +84,29 @@ public class ArticleController : BaseController
 
     [HttpGet("get-user-articles")]
     [Authorize]
-    public async Task<ActionResult<ArticleList>> GetUserArticles(CancellationToken cancellationToken)
+    public async Task<ActionResult<ArticleList>> GetUserArticles([FromQuery] GetArticlesByUserQuery query,CancellationToken cancellationToken)
     {
-        var query = new GetArticlesByUserQuery
-        {
-            UserId = UserId
-        };
-        var vm = await Mediator.Send(query, cancellationToken);
-      
-        return Ok(vm);
+        query.UserId = UserId;
+
+        var response = await Mediator.Send(query, cancellationToken);
+
+        Response.AddPaginationHeader(response.CurrentPage, response.PageSize,
+              response.TotalCount, response.TotalPages);
+
+        return Ok(response);
     }
 
     [HttpGet("get-another-user-articles")]
     [Authorize]
-    public async Task<ActionResult<ArticleList>> GetAnotherUserArticles(Guid Id, CancellationToken cancellationToken)
+    public async Task<ActionResult<ArticleList>> GetAnotherUserArticles([FromQuery] GetArticlesByUserQuery query, CancellationToken cancellationToken)
     {
-        var query = new GetArticlesByUserQuery
-        {
-            UserId = Id
-        };
-        var vm = await Mediator.Send(query, cancellationToken);
 
-        return Ok(vm);
+        var response = await Mediator.Send(query, cancellationToken);
+
+        Response.AddPaginationHeader(response.CurrentPage, response.PageSize,
+              response.TotalCount, response.TotalPages);
+
+        return Ok(response);
     }
 
 
@@ -153,26 +158,31 @@ public class ArticleController : BaseController
 
     [HttpGet("get-list-of-waiting-articles")]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<ArticleList>> GetWaitingArticles(CancellationToken cancellationToken)
+    public async Task<ActionResult<ArticleList>> GetWaitingArticles([FromQuery] GetArticleListQuery query, CancellationToken cancellationToken)
     {
-        var query = new GetArticleListQuery
-        {
-            State = State.Waiting
-        };
+        query.State = State.Waiting;
+
         var response = await Mediator.Send(query, cancellationToken);
+
+
+        Response.AddPaginationHeader(response.CurrentPage, response.PageSize,
+              response.TotalCount, response.TotalPages);
+
         return Ok(response);
     }
 
     [HttpGet("search-waiting-articles-by-title")]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<ArticleList>> SearchWaitingArticlesByTitle(string partTitle, CancellationToken cancellationToken)
+    public async Task<ActionResult<ArticleList>> SearchWaitingArticlesByTitle([FromQuery] SearchArticlesByTitleQuery query, CancellationToken cancellationToken)
     {
-        var query = new SearchArticlesByTitleQuery
-        {
-            State = State.Waiting,
-            PartTitle = partTitle
-        };
+        query.State = State.Waiting;
+
         var response = await Mediator.Send(query, cancellationToken);
+
+
+        Response.AddPaginationHeader(response.CurrentPage, response.PageSize,
+              response.TotalCount, response.TotalPages);
+
         return Ok(response);
     }
 }
