@@ -1,4 +1,6 @@
-﻿namespace Blog.WebApi.Controllers;
+﻿using Blog.Application.Users.Queries.GetProfileUser;
+
+namespace Blog.WebApi.Controllers;
 
 [Route("user/")]
 [Authorize]
@@ -29,6 +31,17 @@ public class UserContoller : BaseController
         var vm = await Mediator.Send(new GetUserInfoQuery
         {
             Id = UserId
+        }, cancellationToken);
+
+        return Ok(vm);
+    }
+    [HttpGet("get-profile-user")]
+    public async Task<ActionResult<ProfileUser>> GetProfileUser(Guid id,CancellationToken cancellationToken)
+    {
+        var vm = await Mediator.Send(new GetProfileUserQuery
+        {
+            CurrentUserId = UserId,
+            Id = id
         }, cancellationToken);
 
         return Ok(vm);
@@ -81,7 +94,7 @@ public class UserContoller : BaseController
 
     [HttpGet("get-statistics")]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<UserList>> GetStatistics(CancellationToken cancellationToken)
+    public async Task<ActionResult> GetStatistics(CancellationToken cancellationToken)
     {
         var query = new GetStatisticsQuery
         {

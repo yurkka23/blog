@@ -9,14 +9,16 @@ public class AuthController : BaseController
     private readonly SignInManager<User> _signInManager;
     private readonly IBlogDbContext _blogContext;
     private readonly IUserService _userService;
+    private readonly ICacheService _cacheService;
 
     public AuthController(IUserService userService, IBlogDbContext blogContext,
-        SignInManager<User> signInManager, UserManager<User> userManager, IMediator mediator) : base(mediator) 
+        SignInManager<User> signInManager, UserManager<User> userManager, IMediator mediator, ICacheService cacheService) : base(mediator)
     {
         _userService = userService;
         _blogContext = blogContext;
         _signInManager = signInManager;
         _userManager = userManager;
+        _cacheService = cacheService;   
     }
     [AllowAnonymous]
     [HttpPost("register")]
@@ -52,7 +54,8 @@ public class AuthController : BaseController
 
         if (result.Succeeded)
         {
-            await _signInManager.SignInAsync(newUser, false); 
+            await _signInManager.SignInAsync(newUser, false);
+            await _cacheService.DeleteAsync("UserListSearch");
             return Ok(newUser.Id);
         }
 
@@ -86,6 +89,57 @@ public class AuthController : BaseController
        
         var token = _userService.CreateToken(user);
        
+        var refreshToken = _userService.GenerateRefreshToken();
+        await _userService.SetRefreshToken(refreshToken, user, HttpContext, _blogContext, CancellationToken.None);
+        var response = new AuthResponseDTO
+        {
+            JwtToken = token,
+            RefreshToken = refreshToken.Token,
+            User = new()
+            {
+                Id = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                AboutMe = user.AboutMe,
+                ImageUserUrl = user.ImageUserUrl,
+                Role = user.Role
+            }
+        };
+        return Ok(response);
+    }
+
+    [AllowAnonymous]
+    [HttpPost("login-with-facebook/")]
+    public async Task<ActionResult<AuthRefreshDTO>> LoginWithFacebook([FromBody] FacebookLoginDTO request)
+    {
+        string UserNameDTO = request.Email?.Split('@')[0] ?? request.Id;
+        var user = await _blogContext.Users.FirstOrDefaultAsync(u => u.UserName == UserNameDTO);
+
+        if (user == null)
+        {
+            user = new User
+            {
+                UserName = UserNameDTO,
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                ImageUserUrl = request.AvatarUrl,
+                AboutMe = null,
+                Role = Role.User
+            };
+
+            var result = await _userManager.CreateAsync(user);
+
+
+            if (result.Succeeded)
+            {
+                await _cacheService.DeleteAsync("UserListSearch");
+            }
+        }
+
+        await _signInManager.SignInAsync(user, false);
+
+        var token = _userService.CreateToken(user);
+
         var refreshToken = _userService.GenerateRefreshToken();
         await _userService.SetRefreshToken(refreshToken, user, HttpContext, _blogContext, CancellationToken.None);
         var response = new AuthResponseDTO

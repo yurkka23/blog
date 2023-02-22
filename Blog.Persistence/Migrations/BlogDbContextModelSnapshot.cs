@@ -134,6 +134,83 @@ namespace Blog.Persistence.Migrations
                     b.ToTable("Comments");
                 });
 
+            modelBuilder.Entity("Blog.Domain.Models.Connection", b =>
+                {
+                    b.Property<string>("ConnectionId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("GroupName")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ConnectionId");
+
+                    b.HasIndex("GroupName");
+
+                    b.ToTable("Connections");
+                });
+
+            modelBuilder.Entity("Blog.Domain.Models.Group", b =>
+                {
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Name");
+
+                    b.ToTable("Groups");
+                });
+
+            modelBuilder.Entity("Blog.Domain.Models.Message", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DateRead")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("MessageSent")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("RecipienId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("RecipienUsername")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("RecipientDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("RecipientId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("SenderDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("SenderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SenderUsername")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RecipientId");
+
+                    b.HasIndex("SenderId");
+
+                    b.ToTable("Messages");
+                });
+
             modelBuilder.Entity("Blog.Domain.Models.Rating", b =>
                 {
                     b.Property<int>("Id")
@@ -262,6 +339,21 @@ namespace Blog.Persistence.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("Blog.Domain.Models.UserSubscription", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserToSubscribeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("UserId", "UserToSubscribeId");
+
+                    b.HasIndex("UserToSubscribeId");
+
+                    b.ToTable("UserSubscriptions");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -397,6 +489,32 @@ namespace Blog.Persistence.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Blog.Domain.Models.Connection", b =>
+                {
+                    b.HasOne("Blog.Domain.Models.Group", null)
+                        .WithMany("Connections")
+                        .HasForeignKey("GroupName");
+                });
+
+            modelBuilder.Entity("Blog.Domain.Models.Message", b =>
+                {
+                    b.HasOne("Blog.Domain.Models.User", "Recipient")
+                        .WithMany("MessagesRecieved")
+                        .HasForeignKey("RecipientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Blog.Domain.Models.User", "Sender")
+                        .WithMany("MessagesSent")
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Recipient");
+
+                    b.Navigation("Sender");
+                });
+
             modelBuilder.Entity("Blog.Domain.Models.Rating", b =>
                 {
                     b.HasOne("Blog.Domain.Models.Article", "Article")
@@ -414,6 +532,25 @@ namespace Blog.Persistence.Migrations
                     b.Navigation("Article");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Blog.Domain.Models.UserSubscription", b =>
+                {
+                    b.HasOne("Blog.Domain.Models.User", "User")
+                        .WithMany("UserSubscriptions")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Blog.Domain.Models.User", "UserToSubscribe")
+                        .WithMany()
+                        .HasForeignKey("UserToSubscribeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+
+                    b.Navigation("UserToSubscribe");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -474,13 +611,24 @@ namespace Blog.Persistence.Migrations
                     b.Navigation("Ratings");
                 });
 
+            modelBuilder.Entity("Blog.Domain.Models.Group", b =>
+                {
+                    b.Navigation("Connections");
+                });
+
             modelBuilder.Entity("Blog.Domain.Models.User", b =>
                 {
                     b.Navigation("Articles");
 
                     b.Navigation("Comments");
 
+                    b.Navigation("MessagesRecieved");
+
+                    b.Navigation("MessagesSent");
+
                     b.Navigation("Ratings");
+
+                    b.Navigation("UserSubscriptions");
                 });
 #pragma warning restore 612, 618
         }

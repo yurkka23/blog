@@ -1,11 +1,18 @@
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 //add services to the cointainer
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<PresenceTracker>();
 builder.Services.AddApplication(builder.Configuration);
 builder.Services.AddPersistance(builder.Configuration);
+builder.Services.Configure<CacheStoreDatabaseSettings>(
+    builder.Configuration.GetSection("CachingStoreDatabase"));
+
 builder.Services.AddControllers();
 
 builder.Services.AddAutoMapper(config =>
@@ -20,7 +27,8 @@ builder.Services.AddCors(options =>
     {
         policy.AllowAnyHeader();
         policy.AllowAnyMethod();
-        policy.AllowAnyOrigin();
+        policy.AllowCredentials();
+        policy.WithOrigins("http://localhost:4200", "https://localhost:4200");
     });
 });
 
@@ -57,6 +65,20 @@ builder.Services.AddAuthentication(options => {
             ValidateIssuer = false,
             ValidateAudience = false,
             ValidateLifetime = true
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -98,6 +120,19 @@ app.UseRouting();
 app.UseAuthorization();
 
 app.UseCustomExceptionHandler();
+
+app.MapHub<PresenceHub>("hubs/presence");
+app.MapHub<MessageHub>("hubs/message");
+
+//clear table connection 
+using var scope = app.Services.CreateScope();
+var services = scope.ServiceProvider;
+var context = services.GetRequiredService<BlogDbContext>();
+//await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE [Connections]");
+//await context.Database.ExecuteSqlRawAsync("Delete from [Connections]");
+context.Connections.RemoveRange(context.Connections);
+await context.SaveChangesAsync();
+
 
 app.UseEndpoints(endpoints =>
 {

@@ -8,10 +8,11 @@ using Blog.Application.Articles.Queries.GetArticleList;
 using Blog.Application.Common.Exceptions;
 using Blog.Domain.Models;
 using Blog.Domain.Helpers;
+using Blog.Application.Common.Helpers;
 
 namespace Blog.Application.Articles.Queries.GetArticlesByUser;
 
-public class GetArticlesByUserQueryHandle : IRequestHandler<GetArticlesByUserQuery, ArticleListByUser>
+public class GetArticlesByUserQueryHandle : IRequestHandler<GetArticlesByUserQuery, PagedList<ArticleByUserLookupDto>>
 {
     private readonly IBlogDbContext _dbContext;
     private readonly IMapper _mapper;
@@ -20,29 +21,23 @@ public class GetArticlesByUserQueryHandle : IRequestHandler<GetArticlesByUserQue
         _dbContext = dbContext;
         _mapper = mapper;
     }
-    public async Task<ArticleListByUser> Handle(GetArticlesByUserQuery request, CancellationToken cancellationToken)
+    public async Task<PagedList<ArticleByUserLookupDto>> Handle(GetArticlesByUserQuery request, CancellationToken cancellationToken)
     {
         if (request.UserId == Guid.Empty)
         {
             throw new NotFoundException(nameof(User), request.UserId);
         }
 
-        var articleQuery = await _dbContext.Articles
-            .Include(a => a.Ratings)
-            .AsNoTracking()
-            .Where(article => article.UserId == request.UserId)
-            .OrderByDescending(article => article.CreatedTime)
-            .ToListAsync(cancellationToken);
+        var articleQuery = _dbContext.Articles
+           .Include(a => a.Ratings)
+           .Include(a => a.User)
+           .AsNoTracking()
+           .Where(article => article.UserId == request.UserId)
+           .OrderByDescending(article => article.CreatedTime);        
 
-        var articesList = new List<ArticleByUserLookupDto>();
-        foreach (var article in articleQuery)
-        {
-            var temp = _mapper.Map<ArticleByUserLookupDto>(article);
-            temp.AverageRating = ArticleHelper.GetAverageRating(article);
-            articesList.Add(temp);
-
-        }
-
-        return new ArticleListByUser { Articles = articesList };
+        return await PagedList<ArticleByUserLookupDto>.CreateAsync(articleQuery.ProjectTo<ArticleByUserLookupDto>(_mapper
+               .ConfigurationProvider),
+                   request.PageNumber, request.PageSize);       
     }
+    
 }

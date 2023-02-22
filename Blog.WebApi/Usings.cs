@@ -57,4 +57,7 @@ global using Blog.Application.Users.Queries.GetStatistics;
 global using Blog.Application.Users.Queries.GetUsersByRole;
 global using Blog.Application.Users.Queries.SearchUser;
 global using Blog.Application.Users.Commands.ChangeRoleToAdmin;
+global using Blog.Application.Caching;
+global using Microsoft.AspNetCore.SignalR;
+global using Blog.WebApi.SignalR;
 
